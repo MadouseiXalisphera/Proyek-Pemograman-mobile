@@ -2,6 +2,18 @@ import 'cart_item_model.dart';
 
 enum PaymentMethod { cash, transfer, qris }
 
+/// Pesanan + siklus hidupnya.
+///
+/// ALUR (manual, tanpa payment gateway):
+///   1. waiting_payment      → cash, menunggu bayar di kasir
+///   2. waiting_confirmation → transfer/QRIS, bukti diunggah, menunggu kasir
+///   3. confirmed            → kasir/admin validasi pembayaran (paymentConfirmed
+///                             = true) → BARU muncul di kitchen
+///   4. cooking / ready / done → diturunkan dari status item (kitchen)
+///   x. cancelled            → kasir menolak
+///
+/// `statusKey` dihitung dari (cancelled, paymentConfirmed, paymentMethod,
+/// status item) — satu sumber kebenaran, dipakai user, kitchen, dan admin.
 class OrderModel {
   final String id;
   final String namaPemesan;
@@ -11,8 +23,16 @@ class OrderModel {
   final PaymentMethod paymentMethod;
   final List<CartItem> items;
   final int totalHarga;
-  String status;
   final DateTime createdAt;
+
+  /// Path bukti pembayaran (lokal sekarang; URL Supabase Storage nanti).
+  final String? paymentProofPath;
+
+  /// Divalidasi kasir/admin. Pesanan baru tampil di kitchen bila true.
+  bool paymentConfirmed;
+
+  /// Dibatalkan kasir/admin.
+  bool cancelled;
 
   OrderModel({
     required this.id,
@@ -23,7 +43,48 @@ class OrderModel {
     required this.paymentMethod,
     required this.items,
     required this.totalHarga,
-    this.status = 'pending',
     required this.createdAt,
+    this.paymentProofPath,
+    this.paymentConfirmed = false,
+    this.cancelled = false,
   });
+
+  /// Kunci status lifecycle untuk ditampilkan (lihat OrderStatusView).
+  String get statusKey {
+    if (cancelled) return 'cancelled';
+    if (!paymentConfirmed) {
+      return paymentMethod == PaymentMethod.cash
+          ? 'waiting_payment'
+          : 'waiting_confirmation';
+    }
+    // Sudah dibayar → fase kitchen, diturunkan dari status item.
+    if (items.isEmpty) return 'confirmed';
+    final allDone = items.every((i) => i.status == ItemStatus.done);
+    if (allDone) return 'done';
+    final noneConfirm = items.every((i) => i.status != ItemStatus.confirm);
+    if (noneConfirm) return 'ready';
+    final anyAdvanced = items.any((i) => i.status != ItemStatus.confirm);
+    if (anyAdvanced) return 'cooking';
+    return 'confirmed';
+  }
+
+  /// Tampil di kitchen: sudah dibayar, belum dibatalkan, belum semua selesai.
+  bool get isVisibleToKitchen =>
+      paymentConfirmed &&
+      !cancelled &&
+      !(items.isNotEmpty && items.every((i) => i.status == ItemStatus.done));
+
+  /// Menunggu validasi kasir (untuk daftar di admin).
+  bool get awaitingPayment => !paymentConfirmed && !cancelled;
+}
+
+String paymentMethodLabel(PaymentMethod m) {
+  switch (m) {
+    case PaymentMethod.cash:
+      return 'Cash';
+    case PaymentMethod.transfer:
+      return 'Transfer';
+    case PaymentMethod.qris:
+      return 'QRIS';
+  }
 }

@@ -1,14 +1,19 @@
 # ☕ Cafe Amba
 
-Aplikasi pemesanan cafe berbasis Flutter dengan 3 jenis user:
+Aplikasi pemesanan cafe berbasis Flutter dengan 3 jenis user dalam **satu app**:
 
-| Role                    | Tugas                                        | Status                    |
-| ----------------------- | -------------------------------------------- | ------------------------- |
-| **Pelanggan** (`user`)  | Pesan menu dari tablet di meja masing-masing | 🚧 In progress (Login ✅) |
-| **Kitchen** (`kitchen`) | Terima & olah pesanan masuk                  | ⏳ Belum                  |
-| **Kasir** (`admin`)     | Kelola pembayaran, pesanan, dll              | ⏳ Belum                  |
+| Role                    | Tugas                                        | Status                       |
+| ----------------------- | -------------------------------------------- | ---------------------------- |
+| **Pelanggan** (`user`)  | Pesan menu dari tablet di meja masing-masing | ✅ Lengkap (Fase A–E)        |
+| **Kitchen** (`kitchen`) | Terima & olah pesanan, kelola stok menu      | ✅ Lengkap (Fase E–G)        |
+| **Kasir** (`admin`)     | Validasi pembayaran, rekap pesanan           | 🚧 Inti jalan; halaman lengkap = pengembangan lanjutan |
 
-Saat ini fokus pengembangan ada di **sisi Pelanggan**.
+### Alur pesanan (end-to-end)
+
+Pelanggan checkout → pembayaran (expand inline: transfer/QRIS/cash + upload bukti)
+→ masuk antrian **Kasir** untuk validasi manual → setelah dikonfirmasi, pesanan
+muncul di **Kitchen** → kitchen jalankan 3 kondisi (Confirm Order → ✓ siap ambil
+→ Selesai) → status + notifikasi mengalir balik ke tab Order **Pelanggan**.
 
 ---
 
@@ -36,11 +41,25 @@ cd cafe_amba
 | `kasir01`    | `kasir`  | admin   | —         |
 | `dapur01`    | `dapur`  | kitchen | —         |
 
-> Saat ini hanya role `user` yang bisa login. Akun admin/kitchen ditolak (akan dipakai di app terpisah).
+> Ketiga role kini bisa login dalam **satu app** dan diarahkan ke shell
+> masing-masing (lihat `AppRoutes.shellForRole`):
+> `user` → UserShell (Home/Cart/Order/How to Use/Settings),
+> `kitchen` → KitchenShell (Order/Menu Stock/Settings),
+> `admin` → AdminShell (struktur untuk pengembangan lanjutan).
 
 ---
 
-## 🔥 Migrasi ke Firebase nanti
+## 📦 Dependencies
+
+`get`, `shared_preferences`, `google_fonts`, dan (Fase D) `image_picker` +
+`gal`. Detail + izin platform (Android/iOS untuk galeri) ada di
+`pubspec_dependencies.yaml`.
+
+## 🔥 Migrasi ke Supabase nanti
 
 Semua akses data sudah diisolasi di `lib/app/data/services/`.
-Saat siap, cukup ganti isi method di `AuthService` (dan service lain) dengan panggilan Firebase Auth + Firestore. Controller, view, routes, dan middleware **tidak perlu diubah**.
+Saat siap, cukup ganti isi method di service (`AuthService`, `OrderService`,
+`MenuService`, `MenuStockService`, `PaymentSettingsService`) dengan panggilan
+Supabase Auth + Postgres + Storage + Realtime. Controller, view, routes, dan
+middleware **tidak perlu diubah**. Lihat `ARCHITECTURE.md` bagian "Peta migrasi
+Supabase" dan `PRD.md`.

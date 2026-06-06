@@ -7,7 +7,9 @@ import 'package:flutter/gestures.dart';
 import 'app/core/theme/app_theme.dart';
 import 'app/data/services/auth_service.dart';
 import 'app/data/services/menu_service.dart';
+import 'app/data/services/menu_stock_service.dart';
 import 'app/data/services/order_service.dart';
+import 'app/data/services/payment_settings_service.dart';
 import 'app/modules/cart/cart_controller.dart';
 import 'app/routes/app_pages.dart';
 import 'app/routes/app_routes.dart';
@@ -32,13 +34,23 @@ void main() async {
   Get.put<MenuService>(MenuService(), permanent: true);
   Get.put<CartController>(CartController(), permanent: true);
   Get.put<OrderService>(OrderService(), permanent: true);
+  Get.put<PaymentSettingsService>(PaymentSettingsService(), permanent: true);
+  Get.find<PaymentSettingsService>().load();
+  Get.put<MenuStockService>(MenuStockService(), permanent: true);
+  Get.find<MenuStockService>().init(Get.find<MenuService>().getAllMenu());
+
+  // Seed pesanan contoh (lokal) agar layar kitchen ada datanya. Aman dihapus.
+  Get.find<OrderService>().seedDemo(Get.find<MenuService>().getAllMenu());
 
   // 4. Cek apakah sudah ada session login sebelumnya
   final auth = Get.find<AuthService>();
   final isLoggedIn = await auth.checkSession();
 
-  runApp(
-      CafeAmbaApp(initialRoute: isLoggedIn ? AppRoutes.home : AppRoutes.login));
+  final String initial = isLoggedIn
+      ? AppRoutes.shellForRole(auth.currentUser?.role ?? 'user')
+      : AppRoutes.login;
+
+  runApp(CafeAmbaApp(initialRoute: initial));
 }
 
 class CafeAmbaApp extends StatelessWidget {

@@ -8,8 +8,8 @@ import '../dummy_data.dart';
 import '../models/user_model.dart';
 
 // Service autentikasi.
-// Saat ini menggunakan data dummy. Untuk migrasi ke Firebase,
-// ganti isi method-nya dengan panggilan FirebaseAuth + Firestore.
+// Saat ini menggunakan data dummy. Untuk migrasi ke Supabase,
+// ganti isi method-nya dengan panggilan Supabase Auth + Postgres.
 // Signature method tetap sama, jadi controller tidak perlu diubah.
 
 class AuthService {
@@ -42,11 +42,8 @@ class AuthService {
       return 'Username atau password salah';
     }
 
-    // Hanya role 'user' (pelanggan) yang boleh login di app ini
-    if (matched['role'] != 'user') {
-      return 'Akun ini bukan akun pelanggan';
-    }
-
+    // Semua role (user / kitchen / admin) boleh login. Routing setelah login
+    // dicabang berdasarkan role lewat AppRoutes.shellForRole().
     // Buat objek user dan simpan ke memory + storage
     _currentUser = UserModel(
       username: matched['username'] as String,
@@ -80,6 +77,24 @@ class AuthService {
       await _prefs.remove(_sessionKey);
       return false;
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // VERIFIKASI PASSWORD
+  // Dipakai untuk konfirmasi logout (user memasukkan ulang password).
+  // Saat migrasi Supabase, ganti dengan re-authentication (signInWithPassword
+  // memakai email/username user yang sedang login).
+  // ---------------------------------------------------------------------------
+  bool verifyPassword(String password) {
+    final user = _currentUser;
+    if (user == null) return false;
+    for (int i = 0; i < DummyData.users.length; i++) {
+      final u = DummyData.users[i];
+      if (u['username'] == user.username) {
+        return u['password'] == password;
+      }
+    }
+    return false;
   }
 
   // ---------------------------------------------------------------------------

@@ -5,7 +5,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/top_pick_card.dart';
-import '../../../routes/app_routes.dart';
 import '../home_controller.dart';
 import 'filter_sheet.dart';
 
@@ -83,7 +82,7 @@ class HomeTopPicksSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
-    final listHeight = context.responsiveValue<double>(
+    final listHeight = context.rv<double>(
       mobile: 320,
       tablet: 400,
       desktop: 450,
@@ -202,8 +201,12 @@ class HomeAllMenuHeader extends StatelessWidget {
                   Padding(
                     padding: EdgeInsets.all(context.r(4)),
                     child: Icon(
-                      Icons.tune,
-                      color: AppColors.textSecondary,
+                      filterAktif
+                          ? Icons.filter_alt
+                          : Icons.filter_alt_outlined,
+                      color: filterAktif
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
                       size: context.r(AppSizes.iconLg),
                     ),
                   ),
@@ -263,106 +266,6 @@ class HomeSearchEmpty extends StatelessWidget {
             child: const Text('Hapus pencarian'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Footer navigation bar untuk HomeView.
-///
-/// Dipasang sebagai `Scaffold.bottomNavigationBar` supaya otomatis
-/// full-width window (tidak dibatasi max-width content).
-///
-/// 4 tab: Home (aktif) / Cart / Order / How to Use.
-/// Tab Order dan How to Use masih placeholder, tap menampilkan snackbar.
-class HomeFooterNav extends StatelessWidget {
-  const HomeFooterNav({super.key});
-
-  void _showPlaceholder() {
-    Get.snackbar(
-      'Segera Hadir',
-      'Fitur ini akan datang di pembaruan berikutnya',
-      snackPosition: SnackPosition.BOTTOM,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: context.r(81),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(
-          top: BorderSide(color: AppColors.border, width: 1.5),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            _buildTab(
-              context,
-              icon: Icons.home,
-              label: 'Home',
-              isActive: true,
-            ),
-            _buildTab(
-              context,
-              icon: Icons.shopping_basket_outlined,
-              label: 'Cart',
-              onTap: () => Get.toNamed(AppRoutes.cart),
-            ),
-            _buildTab(
-              context,
-              icon: Icons.receipt_long_outlined,
-              label: 'Order',
-              onTap: _showPlaceholder,
-            ),
-            _buildTab(
-              context,
-              icon: Icons.menu_book_outlined,
-              label: 'How to Use',
-              onTap: _showPlaceholder,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTab(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    bool isActive = false,
-    VoidCallback? onTap,
-  }) {
-    final color = isActive ? AppColors.primary : AppColors.primaryLight;
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: context.r(AppSizes.iconLg)),
-            SizedBox(height: context.r(2)),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: context.rf(11),
-                color: color,
-              ),
-            ),
-            if (isActive) ...[
-              SizedBox(height: context.r(4)),
-              Container(
-                height: 2,
-                width: context.r(AppSizes.iconLg),
-                color: AppColors.primary,
-              ),
-            ],
-          ],
-        ),
       ),
     );
   }

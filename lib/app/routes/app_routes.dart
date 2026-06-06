@@ -5,11 +5,27 @@ abstract class AppRoutes {
   AppRoutes._();
 
   static const String login = '/login';
-  static const String home = '/home';
 
-  // Disiapkan untuk fase selanjutnya
-  static const String cart = '/cart';
+  // Shell utama per role (berisi bottom nav + tab-nya masing-masing).
+  static const String userShell = '/user';
+  static const String kitchenShell = '/kitchen';
+  static const String adminShell = '/admin';
+
+  // Route yang di-push DI ATAS shell (bukan tab).
   static const String checkout = '/checkout';
-  static const String payment = '/payment';
-  static const String howToUse = '/how-to-use';
+  static const String logoutConfirm = '/logout-confirm';
+
+  /// Tentukan shell tujуan berdasarkan role user.
+  /// Dipakai saat login sukses & saat resume session di app start.
+  static String shellForRole(String role) {
+    switch (role) {
+      case 'kitchen':
+        return kitchenShell;
+      case 'admin':
+        return adminShell;
+      case 'user':
+      default:
+        return userShell;
+    }
+  }
 }

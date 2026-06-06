@@ -8,6 +8,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_sizes.dart';
 import '../utils/format.dart';
 import '../utils/responsive.dart';
+import 'app_menu_image.dart';
 import 'quantity_pill.dart';
 
 /// Card menu untuk layout grid (tablet & desktop).
@@ -42,23 +43,10 @@ class MenuGridCard extends StatelessWidget {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () => Get.bottomSheet(
-                  DetailSheet(item: item),
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  enableDrag: true,
-                ),
+                onTap: () => openDetailSheet(item),
                 child: AspectRatio(
                   aspectRatio: 4 / 3,
-                  child: item.fotoPath != null
-                      ? Image.asset(
-                          item.fotoPath!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(color: AppColors.imagePlaceholder);
-                          },
-                        )
-                      : Container(color: AppColors.imagePlaceholder),
+                  child: AppMenuImage(path: item.fotoPath),
                 ),
               ),
             ),

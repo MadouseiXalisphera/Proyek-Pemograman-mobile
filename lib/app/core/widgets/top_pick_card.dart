@@ -8,6 +8,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_sizes.dart';
 import '../utils/format.dart';
 import '../utils/responsive.dart';
+import 'app_menu_image.dart';
 import 'quantity_pill.dart';
 
 class TopPickCard extends StatelessWidget {
@@ -21,17 +22,17 @@ class TopPickCard extends StatelessWidget {
 
     // Fix Issue 4: tinggi card dinaikkan 320/400/450 (sebelumnya 300/360/400)
     // supaya QuantityPill yang membesar di tablet/desktop tidak overflow.
-    final cardWidth = context.responsiveValue<double>(
+    final cardWidth = context.rv<double>(
       mobile: 170,
       tablet: 220,
       desktop: 260,
     );
-    final cardHeight = context.responsiveValue<double>(
+    final cardHeight = context.rv<double>(
       mobile: 320,
       tablet: 400,
       desktop: 450,
     );
-    final imageHeight = context.responsiveValue<double>(
+    final imageHeight = context.rv<double>(
       mobile: 200,
       tablet: 240,
       desktop: 280,
@@ -56,31 +57,12 @@ class TopPickCard extends StatelessWidget {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () => Get.bottomSheet(
-                  DetailSheet(item: item),
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  enableDrag: true,
+                onTap: () => openDetailSheet(item),
+                child: AppMenuImage(
+                  path: item.fotoPath,
+                  width: cardWidth,
+                  height: imageHeight,
                 ),
-                child: item.fotoPath != null
-                    ? Image.asset(
-                        item.fotoPath!,
-                        width: cardWidth,
-                        height: imageHeight,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: cardWidth,
-                            height: imageHeight,
-                            color: AppColors.imagePlaceholder,
-                          );
-                        },
-                      )
-                    : Container(
-                        width: cardWidth,
-                        height: imageHeight,
-                        color: AppColors.imagePlaceholder,
-                      ),
               ),
             ),
           ),

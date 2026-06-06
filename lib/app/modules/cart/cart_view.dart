@@ -5,8 +5,11 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_sizes.dart';
 import '../../core/utils/format.dart';
 import '../../core/utils/responsive.dart';
+import '../../core/widgets/app_menu_image.dart';
+import '../../core/widgets/confirm_clear_dialog.dart';
 import '../../data/models/cart_item_model.dart';
 import '../../routes/app_routes.dart';
+import '../shell/user_shell_controller.dart';
 import 'cart_controller.dart';
 
 class CartView extends StatelessWidget {
@@ -16,125 +19,157 @@ class CartView extends StatelessWidget {
   Widget build(BuildContext context) {
     final CartController cartController = Get.find<CartController>();
 
+    // Tab body-only: judul in-body, list di tengah, bar total+confirm di
+    // bawah (di atas bottom nav shell). Tidak ada AppBar / tombol back.
     return Container(
       color: AppColors.background,
-      child: Center(
-        child: ConstrainedBox(
-          constraints:
-              const BoxConstraints(maxWidth: AppSizes.maxContentDesktop),
-          child: Scaffold(
-            backgroundColor: AppColors.background,
-            appBar: AppBar(
-              backgroundColor: AppColors.surface,
-              elevation: 0,
-              leading: IconButton(
-                icon:
-                    const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-                onPressed: () => Get.back(),
-              ),
-              title: Text(
-                'Keranjang',
-                style: TextStyle(
-                  fontSize: context.rf(28),
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            body: Obx(() {
-              if (cartController.items.isEmpty) {
-                return _buildEmptyState(context);
-              }
-              return ListView.builder(
-                padding: EdgeInsets.all(context.r(AppSizes.lg)),
-                itemCount: cartController.items.length,
-                itemBuilder: (context, index) {
-                  final cartItem = cartController.items[index];
-                  return _CartItemCard(
-                    cartItem: cartItem,
-                    onIncrement: () => cartController.increment(
-                        cartItem.menuItem.id, cartItem.menuItem),
-                    onDecrement: () =>
-                        cartController.decrement(cartItem.menuItem.id),
-                    onDelete: () => _showDeleteDialog(cartItem, cartController),
-                  );
-                },
-              );
-            }),
-            bottomNavigationBar: Obx(() {
-              if (cartController.items.isEmpty) return const SizedBox.shrink();
-              return Container(
-                decoration: const BoxDecoration(
-                  color: AppColors.surface,
-                  border: Border(
-                    top: BorderSide(color: AppColors.border, width: 1.5),
+      child: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints:
+                const BoxConstraints(maxWidth: AppSizes.maxContentDesktop),
+            child: Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    context.r(AppSizes.lg),
+                    context.r(AppSizes.lg),
+                    context.r(AppSizes.lg),
+                    context.r(AppSizes.sm),
                   ),
-                ),
-                padding: EdgeInsets.fromLTRB(
-                  context.r(AppSizes.lg),
-                  context.r(AppSizes.md),
-                  context.r(AppSizes.lg),
-                  context.r(AppSizes.md),
-                ),
-                child: SafeArea(
-                  top: false,
                   child: Row(
                     children: [
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Total:',
-                              style: TextStyle(
-                                fontSize: context.rf(AppSizes.fontMd),
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 250),
-                              transitionBuilder: (child, animation) =>
-                                  FadeTransition(
-                                      opacity: animation, child: child),
-                              child: Text(
-                                cartController.totalHargaFormatted,
-                                key: ValueKey(cartController.totalHarga),
-                                style: TextStyle(
-                                  fontSize: context.rf(AppSizes.fontXxl),
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(
-                        width: context.r(140),
-                        height: context.r(43),
-                        child: ElevatedButton(
-                          onPressed: () => Get.toNamed(AppRoutes.checkout),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(context.r(AppSizes.md)),
-                            ),
-                          ),
-                          child: const Text(
-                            'Confirm Order',
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                        child: Text(
+                          'Keranjang',
+                          style: TextStyle(
+                            fontSize: context.rf(AppSizes.fontDisplay),
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
+                      Obx(() {
+                        if (cartController.items.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return TextButton.icon(
+                          onPressed: () => showClearAllDialog(
+                            onConfirm: cartController.clearCart,
+                          ),
+                          icon: Icon(Icons.delete_outline,
+                              size: context.r(18), color: AppColors.danger),
+                          label: Text(
+                            'Hapus semua',
+                            style: TextStyle(
+                              fontSize: context.rf(AppSizes.fontSm),
+                              color: AppColors.danger,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        );
+                      }),
                     ],
                   ),
                 ),
-              );
-            }),
+                Expanded(
+                  child: Obx(() {
+                    if (cartController.items.isEmpty) {
+                      return _buildEmptyState(context);
+                    }
+                    return ListView.builder(
+                      padding: EdgeInsets.fromLTRB(
+                        context.r(AppSizes.lg),
+                        0,
+                        context.r(AppSizes.lg),
+                        context.r(AppSizes.lg),
+                      ),
+                      itemCount: cartController.items.length,
+                      itemBuilder: (context, index) {
+                        final cartItem = cartController.items[index];
+                        return _CartItemCard(
+                          cartItem: cartItem,
+                          onIncrement: () => cartController.increment(
+                              cartItem.menuItem.id, cartItem.menuItem),
+                          onDecrement: () =>
+                              cartController.decrement(cartItem.menuItem.id),
+                          onDelete: () =>
+                              _showDeleteDialog(cartItem, cartController),
+                        );
+                      },
+                    );
+                  }),
+                ),
+                Obx(() {
+                  if (cartController.items.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return Container(
+                    decoration: const BoxDecoration(
+                      color: AppColors.surface,
+                      border: Border(
+                        top: BorderSide(color: AppColors.border, width: 1.5),
+                      ),
+                    ),
+                    padding: EdgeInsets.all(context.r(AppSizes.lg)),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Total:',
+                                style: TextStyle(
+                                  fontSize: context.rf(AppSizes.fontMd),
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 250),
+                                transitionBuilder: (child, animation) =>
+                                    FadeTransition(
+                                        opacity: animation, child: child),
+                                child: Text(
+                                  cartController.totalHargaFormatted,
+                                  key: ValueKey(cartController.totalHarga),
+                                  style: TextStyle(
+                                    fontSize: context.rf(AppSizes.fontXxl),
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          width: context.r(140),
+                          height: context.r(AppSizes.tapTargetMd),
+                          child: ElevatedButton(
+                            onPressed: () => Get.toNamed(AppRoutes.checkout),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                    context.r(AppSizes.md)),
+                              ),
+                            ),
+                            child: const Text(
+                              'Confirm Order',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
           ),
         ),
       ),
@@ -161,7 +196,7 @@ class CartView extends StatelessWidget {
           ),
           SizedBox(height: context.r(AppSizes.xl)),
           OutlinedButton(
-            onPressed: () => Get.back(),
+            onPressed: () => Get.find<UserShellController>().goToHome(),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.primary,
               side: const BorderSide(color: AppColors.primary),
@@ -225,17 +260,11 @@ class _CartItemCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Foto kiri
-          ClipRRect(
+          AppMenuImage(
+            path: cartItem.menuItem.fotoPath,
+            width: context.r(115),
+            height: context.r(115),
             borderRadius: BorderRadius.circular(context.r(AppSizes.sm)),
-            child: cartItem.menuItem.fotoPath != null
-                ? Image.asset(
-                    cartItem.menuItem.fotoPath!,
-                    width: context.r(115),
-                    height: context.r(115),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _fotoPlaceholder(context),
-                  )
-                : _fotoPlaceholder(context),
           ),
           SizedBox(width: context.r(AppSizes.md)),
           // Detail kanan
@@ -360,14 +389,6 @@ class _CartItemCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _fotoPlaceholder(BuildContext context) {
-    return Container(
-      width: context.r(115),
-      height: context.r(115),
-      color: AppColors.imagePlaceholder,
     );
   }
 }

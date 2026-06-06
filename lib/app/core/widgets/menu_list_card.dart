@@ -8,6 +8,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_sizes.dart';
 import '../utils/format.dart';
 import '../utils/responsive.dart';
+import 'app_menu_image.dart';
 import 'quantity_pill.dart';
 
 class MenuListCard extends StatelessWidget {
@@ -35,24 +36,12 @@ class MenuListCard extends StatelessWidget {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () => Get.bottomSheet(
-                  DetailSheet(item: item),
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  enableDrag: true,
+                onTap: () => openDetailSheet(item),
+                child: AppMenuImage(
+                  path: item.fotoPath,
+                  width: context.r(127),
+                  height: context.r(127),
                 ),
-                child: item.fotoPath != null
-                    ? Image.asset(
-                        item.fotoPath!,
-                        width: context.r(127),
-                        height: context.r(127),
-                        fit: BoxFit.cover,
-                      )
-                    : Container(
-                        width: context.r(127),
-                        height: context.r(127),
-                        color: AppColors.imagePlaceholder,
-                      ),
               ),
             ),
           ),

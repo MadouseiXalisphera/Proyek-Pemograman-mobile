@@ -71,8 +71,9 @@ class LoginController extends GetxController {
       return;
     }
 
-    // Berhasil — pindah ke home, hapus stack
-    Get.offAllNamed(AppRoutes.home);
+    // Berhasil — arahkan ke shell sesuai role, hapus stack.
+    final role = _auth.currentUser?.role ?? 'user';
+    Get.offAllNamed(AppRoutes.shellForRole(role));
   }
 
   @override

@@ -1,5 +1,5 @@
 // Model user yang sedang login.
-// Saat migrasi Firebase, field bisa ditambah (uid, photoUrl, dll).
+// Saat migrasi Supabase, field bisa ditambah (uid, photoUrl, dll).
 
 class UserModel {
   final String username;

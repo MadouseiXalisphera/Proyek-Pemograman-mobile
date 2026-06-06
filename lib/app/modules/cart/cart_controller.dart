@@ -1,8 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../core/utils/format.dart';
 import '../../data/models/cart_item_model.dart';
 import '../../data/models/menu_item_model.dart';
+import '../../data/services/menu_stock_service.dart';
 
 class CartController extends GetxController {
   final RxList<CartItem> items = <CartItem>[].obs;
@@ -15,6 +18,20 @@ class CartController extends GetxController {
   }
 
   void increment(String menuId, MenuItem item) {
+    // Tolak menu yang stoknya habis (di-set Empty oleh kitchen).
+    if (Get.isRegistered<MenuStockService>() &&
+        !Get.find<MenuStockService>().isAvailable(menuId)) {
+      Get.snackbar(
+        'Stok habis',
+        '${item.nama} sedang tidak tersedia',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.danger.withValues(alpha: 0.12),
+        colorText: AppColors.danger,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(milliseconds: 1600),
+      );
+      return;
+    }
     for (int i = 0; i < items.length; i++) {
       if (items[i].menuItem.id == menuId) {
         items[i].quantity++;

@@ -8,6 +8,7 @@ import '../../core/widgets/menu_grid_card.dart';
 import '../../core/widgets/menu_list_card.dart';
 import '../../core/widgets/responsive_wrapper.dart';
 import '../cart/cart_controller.dart';
+import '../shell/user_shell_controller.dart';
 import 'home_controller.dart';
 import 'widgets/cart_floating_bar.dart';
 import 'widgets/home_sections.dart';
@@ -43,17 +44,15 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    final sidePadding = context.responsiveValue<double>(
+    final sidePadding = context.rv<double>(
       mobile: AppSizes.lg,
       tablet: AppSizes.xxl,
-      desktop: AppSizes.xl,
+      desktop: AppSizes.xxl,
     );
 
-    // Fix Issue 2: footer nav full-width — pakai bottomNavigationBar
-    // (yang otomatis full-width Scaffold), wrapper hanya bungkus body.
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
+    // Body-only: shell yang menyediakan Scaffold + bottom nav. Halaman ini
+    // hanya mengembalikan konten tab Home.
+    return SafeArea(
         child: Stack(
           children: [
             // Konten utama dibatasi max-width via ResponsiveWrapper
@@ -154,7 +153,10 @@ class _HomeViewState extends State<HomeView> {
                         child: AnimatedOpacity(
                           duration: const Duration(milliseconds: 200),
                           opacity: visible ? 1.0 : 0.0,
-                          child: const CartFloatingBar(),
+                          child: CartFloatingBar(
+                            onTap: () =>
+                                Get.find<UserShellController>().goToCart(),
+                          ),
                         ),
                       ),
                     );
@@ -164,10 +166,7 @@ class _HomeViewState extends State<HomeView> {
             ),
           ],
         ),
-      ),
-      // Fix Issue 2: footer nav full-width window
-      bottomNavigationBar: const HomeFooterNav(),
-    );
+      );
   }
 
   // ─────────────────────────────────────────────────────────────

@@ -4,11 +4,16 @@ import 'package:get/get.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/utils/responsive.dart';
-import '../../../routes/app_routes.dart';
 import '../../cart/cart_controller.dart';
 
+/// Bar mengambang "Lihat Keranjang" di atas Home.
+///
+/// Tidak lagi push route — pemanggil (Home) memberi [onTap] untuk pindah
+/// ke tab Cart pada shell, sehingga state tab tetap hidup.
 class CartFloatingBar extends StatelessWidget {
-  const CartFloatingBar({super.key});
+  final VoidCallback onTap;
+
+  const CartFloatingBar({super.key, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +21,7 @@ class CartFloatingBar extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => Get.toNamed(AppRoutes.cart),
+        onTap: onTap,
         borderRadius: BorderRadius.circular(context.r(AppSizes.radiusLg)),
         child: Obx(() {
           return Container(

@@ -14,6 +14,8 @@
 /CONVENTIONS.md
 /CLAUDE.md
 /ROADMAP.md
+/PRD.md
+/pubspec_dependencies.yaml
 .DS_Store
 .atom/
 .build/

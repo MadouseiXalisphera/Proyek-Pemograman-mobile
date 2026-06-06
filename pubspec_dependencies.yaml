@@ -15,6 +15,10 @@ dependencies:
   get: ^4.6.6
   shared_preferences: ^2.2.2
   google_fonts: ^6.1.0
+  # Fase D — pembayaran
+  image_picker: ^1.1.2   # upload bukti pembayaran (galeri)
+  gal: ^2.3.0            # "Unduh QRIS" → simpan gambar ke galeri
+  # "Salin No. Rek" memakai Clipboard (flutter/services) — tanpa paket.
 
 dev_dependencies:
   flutter_test:
@@ -23,3 +27,23 @@ dev_dependencies:
 
 flutter:
   uses-material-3: true
+  # Aset menu + pembayaran. File gambar diletakkan manual di folder ini
+  # (lihat assets/README.md). assets/payment/qris.png sudah terisi.
+  assets:
+    - assets/menu/
+    - assets/payment/
+
+# ─────────────────────────────────────────────────────────────────────────
+# IZIN PLATFORM yang perlu ditambahkan (karena upload galeri + simpan QRIS):
+#
+# Android — android/app/src/main/AndroidManifest.xml (di dalam <manifest>):
+#   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+#       android:maxSdkVersion="29" />
+#   (image_picker di Android 13+ pakai Photo Picker, tidak perlu izin galeri.)
+#
+# iOS — ios/Runner/Info.plist:
+#   <key>NSPhotoLibraryUsageDescription</key>
+#   <string>Untuk memilih bukti pembayaran.</string>
+#   <key>NSPhotoLibraryAddUsageDescription</key>
+#   <string>Untuk menyimpan QRIS ke galeri.</string>
+# ─────────────────────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_sizes.dart';
 import '../../core/utils/format.dart';
 import '../../core/utils/responsive.dart';
+import '../../core/widgets/app_menu_image.dart';
 import '../../core/widgets/quantity_big.dart';
 import '../../core/widgets/responsive_wrapper.dart';
 import '../../data/models/menu_item_model.dart';
@@ -56,18 +57,11 @@ class DetailSheet extends StatelessWidget {
                         ),
                         child: AspectRatio(
                           aspectRatio: 4 / 3,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: AppColors.imagePlaceholder,
-                              borderRadius: BorderRadius.circular(
-                                  context.r(AppSizes.radiusXl)),
-                              image: item.fotoPath == null
-                                  ? null
-                                  : DecorationImage(
-                                      image: AssetImage(item.fotoPath!),
-                                      fit: BoxFit.cover,
-                                    ),
-                            ),
+                          child: AppMenuImage(
+                            path: item.fotoPath,
+                            fit: BoxFit.cover,
+                            borderRadius: BorderRadius.circular(
+                                context.r(AppSizes.radiusXl)),
                           ),
                         ),
                       ),
@@ -276,5 +270,25 @@ class DetailSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// LAUNCHER
+// Selalu buka DetailSheet lewat fungsi ini, JANGAN panggil Get.bottomSheet
+// langsung. Karena bottom sheet bukan route GetX, controller yang dibuat
+// via Get.put(tag:) tidak auto-dispose. Fungsi ini menunggu sheet ditutup
+// lalu membuang controller (memicu onClose → catatanC.dispose()).
+// ════════════════════════════════════════════════════════════════════════
+Future<void> openDetailSheet(MenuItem item) async {
+  final String tag = 'detail_${item.id}';
+  await Get.bottomSheet(
+    DetailSheet(item: item),
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    enableDrag: true,
+  );
+  if (Get.isRegistered<DetailController>(tag: tag)) {
+    Get.delete<DetailController>(tag: tag);
   }
 }
