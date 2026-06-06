@@ -15,6 +15,7 @@ dependencies:
   google_fonts: ^8.1.0 # naikkan dari ^6.1.0
   image_picker: ^1.1.2 # upload bukti pembayaran (galeri)
   gal: ^2.3.0 # "Unduh QRIS" → simpan gambar ke galeri
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:
