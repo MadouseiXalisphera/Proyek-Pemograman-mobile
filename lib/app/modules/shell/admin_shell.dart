@@ -3,12 +3,12 @@ import 'package:get/get.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_bottom_nav.dart';
-import '../../core/widgets/placeholder_page.dart';
 import '../admin/admin_orders_page.dart';
 import '../admin/admin_payments_page.dart';
 import '../settings/settings_admin_page.dart';
 import 'admin_shell_controller.dart';
 import 'shell_tabs.dart';
+import '../admin/views/admin_dashboard_view.dart';
 
 /// Shell utama ADMIN/KASIR.
 ///
@@ -24,7 +24,7 @@ class AdminShell extends StatelessWidget {
     final AdminShellController controller = Get.find<AdminShellController>();
 
     final pages = <Widget>[
-      const PlaceholderPage(title: 'Dashboard', phase: 'pengembangan admin'),
+      AdminDashboardView(),
       const AdminOrdersPage(),
       const AdminPaymentsPage(),
       const SettingsAdminPage(),
