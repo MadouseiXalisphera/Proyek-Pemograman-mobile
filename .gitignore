@@ -16,6 +16,7 @@
 /ROADMAP.md
 /PRD.md
 /pubspec_dependencies.yaml
+docs/
 .DS_Store
 .atom/
 .build/
