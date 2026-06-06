@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:get/get.dart';
+import 'package:fl_chart/fl_chart.dart';
+import '../controllers/admin_dashboard_controller.dart';
 
-class AdminDashboardView extends StatelessWidget {
-  // Perbaikan Konstruktor
+// Ubah StatelessWidget menjadi GetView agar terhubung dengan Controller
+class AdminDashboardView extends GetView<AdminDashboardController> {
   const AdminDashboardView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Memanggil controller agar datanya siap digunakan
+    Get.put(AdminDashboardController());
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Dashboard Admin', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
@@ -32,42 +38,62 @@ class AdminDashboardView extends StatelessWidget {
                 children: [
                   Text("Waktu Terbaik: Hari Ini", style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600])),
                   const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      _buildBar("Sen", 40),
-                      _buildBar("Sel", 70),
-                      _buildBar("Rab", 100),
-                      _buildBar("Kam", 60),
-                      _buildBar("Jum", 90),
-                      _buildBar("Sab", 120),
-                      _buildBar("Min", 110),
-                    ],
-                  )
+                  
+                  // Mengganti _buildBar manual dengan grafik BarChart dari fl_chart
+                  SizedBox(
+                    height: 200, // Tinggi area grafik
+                    child: Obx(() => BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: 600, // Sesuaikan dengan batas maksimal datamu
+                        barTouchData: BarTouchData(enabled: true),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    days[value.toInt()],
+                                    style: GoogleFonts.poppins(fontSize: 12),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          // Menyembunyikan teks di kiri, atas, dan kanan agar bersih seperti desain aslimu
+                          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        ),
+                        gridData: const FlGridData(show: false),
+                        borderData: FlBorderData(show: false),
+                        barGroups: List.generate(
+                          controller.salesData.length,
+                          (index) => BarChartGroupData(
+                            x: index,
+                            barRods: [
+                              BarChartRodData(
+                                toY: controller.salesData[index],
+                                color: const Color(0xFF3A5A40), // Menggunakan warna dari desain aslimu
+                                width: 20,
+                                borderRadius: BorderRadius.circular(4),
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                    )),
+                  ),
                 ],
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildBar(String day, double height) {
-    return Column(
-      children: [
-        Container(
-          height: height,
-          width: 20,
-          decoration: BoxDecoration(
-            color: const Color(0xFF3A5A40),
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(day, style: GoogleFonts.poppins(fontSize: 12)),
-      ],
     );
   }
 }
