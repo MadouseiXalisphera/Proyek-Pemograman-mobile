@@ -5,13 +5,9 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_sizes.dart';
 import '../../core/utils/format.dart';
 import '../../core/utils/responsive.dart';
-import '../../core/widgets/app_menu_image.dart';
 import '../../core/widgets/responsive_wrapper.dart';
-import '../../data/models/order_model.dart';
 import 'admin_controller.dart';
 
-/// Tab Payments ADMIN/KASIR: validasi pembayaran manual.
-/// Konfirmasi → pesanan masuk antrian kitchen. Tolak → dibatalkan.
 class AdminPaymentsPage extends GetView<AdminController> {
   const AdminPaymentsPage({super.key});
 
@@ -35,19 +31,46 @@ class AdminPaymentsPage extends GetView<AdminController> {
             ),
             Expanded(
               child: Obx(() {
-                final _ = controller.reactiveSource.length;
-                final list = controller.awaiting;
-                if (list.isEmpty) {
-                  return _empty(context, 'Tidak ada pembayaran menunggu');
+                if (controller.isLoading.value) {
+                  return const Center(child: CircularProgressIndicator());
                 }
-                return ListView.builder(
-                  padding: EdgeInsets.fromLTRB(context.r(AppSizes.lg), 0,
-                      context.r(AppSizes.lg), context.r(AppSizes.lg)),
-                  itemCount: list.length,
-                  itemBuilder: (_, i) => _PaymentCard(
-                    order: list[i],
-                    onConfirm: () => controller.confirm(list[i].id),
-                    onReject: () => controller.cancel(list[i].id),
+
+                final list = controller.pendingOrders;
+
+                // Jika data kosong, bungkus dengan SingleChildScrollView agar tetap bisa ditarik/refresh
+                if (list.isEmpty) {
+                  return RefreshIndicator(
+                    onRefresh: () => controller.loadAllData(),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Tidak ada pembayaran menunggu',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                // Jika ada data, pasang RefreshIndicator di ListView
+                return RefreshIndicator(
+                  onRefresh: () => controller.loadAllData(),
+                  child: ListView.builder(
+                    padding: EdgeInsets.all(context.r(AppSizes.lg)),
+                    itemCount: list.length,
+                    itemBuilder: (_, i) {
+                      final order = list[i];
+                      return _PaymentCardAPI(
+                        orderData: order,
+                        onConfirm: () =>
+                            controller.confirm(order['id'].toString()),
+                        onReject: () =>
+                            controller.cancel(order['id'].toString()),
+                      );
+                    },
                   ),
                 );
               }),
@@ -57,34 +80,18 @@ class AdminPaymentsPage extends GetView<AdminController> {
       ),
     );
   }
-
-  Widget _empty(BuildContext context, String text) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.verified_outlined,
-              size: context.r(72), color: AppColors.primaryLight),
-          SizedBox(height: context.r(AppSizes.md)),
-          Text(text,
-              style: TextStyle(
-                  fontSize: context.rf(AppSizes.fontMd),
-                  color: AppColors.textSecondary)),
-        ],
-      ),
-    );
-  }
 }
 
-class _PaymentCard extends StatelessWidget {
-  final OrderModel order;
+// 1. Tambahkan parameter onReject
+class _PaymentCardAPI extends StatelessWidget {
+  final dynamic orderData;
   final VoidCallback onConfirm;
-  final VoidCallback onReject;
+  final VoidCallback onReject; // <--- Tambahkan ini
 
-  const _PaymentCard({
-    required this.order,
+  const _PaymentCardAPI({
+    required this.orderData,
     required this.onConfirm,
-    required this.onReject,
+    required this.onReject, // <--- Tambahkan ini
   });
 
   @override
@@ -100,95 +107,43 @@ class _PaymentCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                  '${order.namaMeja} · ${order.namaPemesan}',
-                  style: TextStyle(
-                    fontSize: context.rf(AppSizes.fontLg),
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
+              Text(
+                'Meja ${orderData['table_name']} - ${orderData['customer_name']}',
+                style: TextStyle(
+                  fontSize: context.rf(AppSizes.fontLg),
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                paymentMethodLabel(order.paymentMethod),
+                orderData['payment_method'].toString().toUpperCase(),
                 style: TextStyle(
-                  fontSize: context.rf(AppSizes.fontSm),
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
+                    color: AppColors.primary, fontWeight: FontWeight.bold),
               ),
             ],
           ),
           SizedBox(height: context.r(AppSizes.sm)),
-          for (final it in order.items)
-            Text(
-              '${it.menuItem.nama} x${it.quantity}',
-              style: TextStyle(
-                fontSize: context.rf(AppSizes.fontMd),
-                color: AppColors.textSecondary,
-              ),
-            ),
-          SizedBox(height: context.r(AppSizes.sm)),
           Text(
-            'Total: ${formatRupiah(order.totalHarga)}',
-            style: TextStyle(
-              fontSize: context.rf(AppSizes.fontMd),
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
+            'Total: Rp ${orderData['total_price']}',
+            style: TextStyle(fontSize: context.rf(AppSizes.fontMd)),
           ),
-
-          // Bukti pembayaran (jika ada) — tap untuk perbesar.
-          if (order.paymentProofPath != null) ...[
-            SizedBox(height: context.r(AppSizes.md)),
-            Text(
-              'Bukti pembayaran:',
-              style: TextStyle(
-                fontSize: context.rf(AppSizes.fontSm),
-                color: AppColors.textSecondary,
-              ),
-            ),
-            SizedBox(height: context.r(AppSizes.xs)),
-            GestureDetector(
-              onTap: () => _viewProof(context, order.paymentProofPath!),
-              child: AppMenuImage(
-                path: order.paymentProofPath,
-                width: double.infinity,
-                height: context.r(160),
-                fit: BoxFit.cover,
-                borderRadius: BorderRadius.circular(context.r(AppSizes.md)),
-              ),
-            ),
-          ] else ...[
-            SizedBox(height: context.r(AppSizes.sm)),
-            Text(
-              order.paymentMethod == PaymentMethod.cash
-                  ? 'Bayar tunai di kasir.'
-                  : 'Belum ada bukti.',
-              style: TextStyle(
-                fontSize: context.rf(AppSizes.fontSm),
-                fontStyle: FontStyle.italic,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-
           SizedBox(height: context.r(AppSizes.lg)),
+
+          // 2. Ubah bagian tombol menjadi Row berisi 2 tombol (Tolak & Konfirmasi)
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
                   onPressed: onReject,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.danger,
-                    side: const BorderSide(color: AppColors.danger),
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
                     padding:
                         EdgeInsets.symmetric(vertical: context.r(AppSizes.md)),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                          context.r(AppSizes.radiusFull)),
+                      borderRadius:
+                          BorderRadius.circular(context.r(AppSizes.radiusFull)),
                     ),
                   ),
                   child: const Text('Tolak'),
@@ -202,39 +157,21 @@ class _PaymentCard extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
-                    elevation: 0,
                     padding:
                         EdgeInsets.symmetric(vertical: context.r(AppSizes.md)),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                          context.r(AppSizes.radiusFull)),
+                      borderRadius:
+                          BorderRadius.circular(context.r(AppSizes.radiusFull)),
                     ),
                   ),
                   child: const Text('Konfirmasi Pembayaran',
-                      style: TextStyle(fontWeight: FontWeight.w600)),
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
           ),
         ],
       ),
-    );
-  }
-
-  void _viewProof(BuildContext context, String path) {
-    Get.dialog(
-      Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.all(context.r(AppSizes.lg)),
-        child: GestureDetector(
-          onTap: () => Get.back(),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(context.r(AppSizes.md)),
-            child: AppMenuImage(path: path, fit: BoxFit.contain),
-          ),
-        ),
-      ),
-      barrierColor: Colors.black.withValues(alpha: 0.8),
     );
   }
 }
