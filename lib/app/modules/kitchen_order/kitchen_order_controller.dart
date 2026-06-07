@@ -1,24 +1,57 @@
 import 'package:get/get.dart';
 
-import '../../data/models/cart_item_model.dart';
-import '../../data/models/order_model.dart';
-import '../../data/services/order_service.dart';
+import '../../data/services/order_api_service.dart';
 
-/// Controller layar Order kitchen. Logika transisi & agregasi ada di
-/// OrderService; controller hanya menyalurkan aksi dan menyiapkan data
-/// terkelompok per meja.
 class KitchenOrderController extends GetxController {
-  final OrderService _orderService = Get.find<OrderService>();
+  final OrderApiService _api = Get.find<OrderApiService>();
 
-  RxList<OrderModel> get orders => _orderService.orders;
+  final RxList<Map<String, dynamic>> kitchenOrders =
+      <Map<String, dynamic>>[].obs;
 
-  Map<String, List<OrderModel>> get grouped =>
-      _orderService.ordersByTableForKitchen();
+  final RxBool isLoading = false.obs;
 
-  bool get hasDoneOrders => _orderService.hasDoneOrders;
+  @override
+  void onInit() {
+    super.onInit();
+    loadOrders();
+  }
 
-  void advance(OrderModel order, CartItem item) =>
-      _orderService.advanceItemStatus(order.id, item);
+  Future<void> loadOrders() async {
+    try {
+      isLoading.value = true;
 
-  void clearDone() => _orderService.removeDoneOrders();
+      final data = await _api.getKitchenOrders();
+
+      kitchenOrders.assignAll(
+        data.cast<Map<String, dynamic>>(),
+      );
+    } catch (e) {
+      print(e);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> advanceStatus(
+    Map<String, dynamic> item,
+  ) async {
+    final current = item['status'].toString();
+
+    String next;
+
+    if (current == 'confirm') {
+      next = 'ready';
+    } else if (current == 'ready') {
+      next = 'done';
+    } else {
+      return;
+    }
+
+    await _api.updateItemStatus(
+      item['item_id'].toString(),
+      next,
+    );
+
+    await loadOrders();
+  }
 }

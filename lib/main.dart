@@ -13,6 +13,8 @@ import 'app/data/services/payment_settings_service.dart';
 import 'app/modules/cart/cart_controller.dart';
 import 'app/routes/app_pages.dart';
 import 'app/routes/app_routes.dart';
+import 'app/data/services/order_api_service.dart';
+import 'app/modules/order_user/user_order_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +39,8 @@ void main() async {
   Get.put<PaymentSettingsService>(PaymentSettingsService(), permanent: true);
   Get.find<PaymentSettingsService>().load();
   Get.put<MenuStockService>(MenuStockService(), permanent: true);
-  Get.find<MenuStockService>().init(Get.find<MenuService>().getAllMenu());
+  Get.put<OrderApiService>(OrderApiService(), permanent: true);
+  // Get.put<UserOrderController>(UserOrderController(), permanent: true);
 
   // Seed pesanan contoh (lokal) agar layar kitchen ada datanya. Aman dihapus.
   Get.find<OrderService>().seedDemo(Get.find<MenuService>().getAllMenu());

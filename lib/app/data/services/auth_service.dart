@@ -101,16 +101,35 @@ class AuthService {
   // Saat migrasi Supabase, ganti dengan re-authentication (signInWithPassword
   // memakai email/username user yang sedang login).
   // ---------------------------------------------------------------------------
-  bool verifyPassword(String password) {
-    final user = _currentUser;
-    if (user == null) return false;
-    for (int i = 0; i < DummyData.users.length; i++) {
-      final u = DummyData.users[i];
-      if (u['username'] == user.username) {
-        return u['password'] == password;
-      }
+  Future<bool> verifyPassword(
+    String password,
+  ) async {
+    try {
+      print("USERNAME = ${_currentUser?.username}");
+      print("PASSWORD = $password");
+      final response = await http.post(
+        Uri.parse(
+          '${ApiConfig.baseUrl}/auth/verify_password.php',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'username': _currentUser?.username,
+          'password': password,
+        }),
+      );
+
+      print(response.body);
+      print("VERIFY RESPONSE = ${response.body}");
+
+      final data = jsonDecode(response.body);
+
+      return data['success'] == true;
+    } catch (e) {
+      print(e);
+      return false;
     }
-    return false;
   }
 
   // ---------------------------------------------------------------------------

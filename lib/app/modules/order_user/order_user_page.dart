@@ -10,6 +10,7 @@ import '../../core/widgets/responsive_wrapper.dart';
 import '../../data/models/order_model.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/order_service.dart';
+import 'user_order_controller.dart';
 
 /// Tab Order PELANGGAN: riwayat pesanan untuk meja yang sedang login,
 /// beserta status terkini (read-only — status diubah oleh kitchen).
@@ -18,8 +19,11 @@ class OrderUserPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final orderService = Get.find<OrderService>();
-    final namaMeja = Get.find<AuthService>().currentUser?.namaMeja ?? '-';
+    final controller = Get.put(
+      UserOrderController(),
+    );
+    print("ORDER PAGE OPENED");
+    print(controller);
 
     return SafeArea(
       child: ResponsiveWrapper(
@@ -44,8 +48,8 @@ class OrderUserPage extends StatelessWidget {
             ),
             Expanded(
               child: Obx(() {
-                // Membaca orderService.orders di dalam Obx agar reaktif.
-                final list = orderService.ordersForMeja(namaMeja);
+                // Membaca controller.orders di dalam Obx agar reaktif.
+                final list = controller.orders;
                 if (list.isEmpty) return _empty(context);
                 return ListView.builder(
                   padding: EdgeInsets.fromLTRB(
@@ -55,7 +59,32 @@ class OrderUserPage extends StatelessWidget {
                     context.r(AppSizes.lg),
                   ),
                   itemCount: list.length,
-                  itemBuilder: (_, i) => _OrderCard(order: list[i]),
+                  itemBuilder: (_, i) {
+                    final item = list[i];
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      child: ListTile(
+                        title: Text(
+                          item['menu_name'],
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Qty : ${item['quantity']}'),
+                            Text('Harga : Rp ${item['price']}'),
+                            Text(
+                              'Status : ${statusLabel(item['status'])}',
+                            ),
+                            Text('Waktu : ${item['created_at']}'),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 );
               }),
             ),
@@ -86,6 +115,22 @@ class OrderUserPage extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+String statusLabel(String status) {
+  switch (status) {
+    case 'confirm':
+      return 'Menunggu Diproses';
+
+    case 'ready':
+      return 'Sedang Diproses';
+
+    case 'done':
+      return 'Pesanan Selesai';
+
+    default:
+      return status;
   }
 }
 

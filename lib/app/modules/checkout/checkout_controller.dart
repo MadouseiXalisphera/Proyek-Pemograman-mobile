@@ -16,6 +16,7 @@ import '../../data/services/order_service.dart';
 import '../../data/services/payment_settings_service.dart';
 import '../cart/cart_controller.dart';
 import '../shell/user_shell_controller.dart';
+import '../../data/services/order_api_service.dart';
 
 class CheckoutController extends GetxController {
   // 1. Form
@@ -33,6 +34,7 @@ class CheckoutController extends GetxController {
   // 3. Dependencies
   final AuthService _auth = Get.find<AuthService>();
   final CartController _cart = Get.find<CartController>();
+  final OrderApiService _orderApi = Get.find<OrderApiService>();
   final OrderService _orderService = Get.find<OrderService>();
   final PaymentSettingsService _paymentSettings =
       Get.find<PaymentSettingsService>();
@@ -166,11 +168,11 @@ class CheckoutController extends GetxController {
   void removeProof() => proofPath.value = null;
 
   // 11. STEP 2 — Kirim ke kasir: commit order + clear cart + ke tab Order.
-  void finalize() {
+  Future<void> finalize() async {
     if (isSubmitting.value || _draft == null) return;
     if (requiresProof && !hasProof) {
-      _snack('Bukti diperlukan', 'Unggah bukti pembayaran dulu',
-          AppColors.danger);
+      _snack(
+          'Bukti diperlukan', 'Unggah bukti pembayaran dulu', AppColors.danger);
       return;
     }
     isSubmitting.value = true;
@@ -189,7 +191,45 @@ class CheckoutController extends GetxController {
       // paymentConfirmed default false → menunggu validasi kasir/admin
       // sebelum tampil di kitchen.
     );
-    _orderService.addOrder(committed);
+    try {
+      await _orderApi.createOrder({
+        "customer_name": committed.namaPemesan,
+        "table_name": committed.namaMeja,
+        "phone": committed.nomorHp ?? "",
+        "email": committed.email,
+        "payment_method": committed.paymentMethod.name,
+        "total_price": committed.totalHarga,
+        "payment_proof": committed.paymentProofPath ?? "",
+        "items": committed.items.map((item) {
+          return {
+            "menu_name": item.menuItem.nama,
+            "quantity": item.quantity,
+            "price": item.menuItem.harga,
+            "status": item.status.name,
+          };
+        }).toList(),
+      });
+
+      _cart.clearCart();
+
+      if (Get.isRegistered<UserShellController>()) {
+        Get.find<UserShellController>().goToOrder();
+      }
+
+      Get.back();
+
+      _snack(
+        'Pesanan dikirim',
+        'Pesanan berhasil masuk database',
+        AppColors.primary,
+      );
+    } catch (e) {
+      _snack(
+        'Error',
+        e.toString(),
+        AppColors.danger,
+      );
+    }
     _cart.clearCart();
     isSubmitting.value = false;
 

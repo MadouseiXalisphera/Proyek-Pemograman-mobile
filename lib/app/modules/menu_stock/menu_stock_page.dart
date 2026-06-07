@@ -32,8 +32,7 @@ class MenuStockPage extends GetView<MenuStockController> {
             ),
             Expanded(
               child: Obx(() {
-                final stockMap = controller.stockMap; // dependency reaktif
-                final menu = controller.menu;
+                final menu = controller.menu; // dependency reaktif
                 return ListView.builder(
                   padding: EdgeInsets.fromLTRB(context.r(AppSizes.lg), 0,
                       context.r(AppSizes.lg), context.r(AppSizes.lg)),
@@ -42,8 +41,43 @@ class MenuStockPage extends GetView<MenuStockController> {
                     final item = menu[i];
                     return MenuStockCard(
                       item: item,
-                      stock: stockMap[item.id] ?? 0,
-                      onAdd: () => controller.add(item.id),
+                      stock: item.stock,
+                      onAdd: () {
+                        final qtyController = TextEditingController();
+
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Tambah Stok'),
+                            content: TextField(
+                              controller: qtyController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                hintText: 'Masukkan jumlah stok',
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Batal'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  final qty =
+                                      int.tryParse(qtyController.text) ?? 0;
+
+                                  if (qty > 0) {
+                                    controller.add(item.id, qty);
+                                  }
+
+                                  Navigator.pop(context);
+                                },
+                                child: const Text('Tambah'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                       onEmpty: () => controller.empty(item.id),
                     );
                   },

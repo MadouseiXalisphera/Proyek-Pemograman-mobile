@@ -5,7 +5,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/format.dart';
 import '../../data/models/cart_item_model.dart';
 import '../../data/models/menu_item_model.dart';
-import '../../data/services/menu_stock_service.dart';
 
 class CartController extends GetxController {
   final RxList<CartItem> items = <CartItem>[].obs;
@@ -18,9 +17,7 @@ class CartController extends GetxController {
   }
 
   void increment(String menuId, MenuItem item) {
-    // Tolak menu yang stoknya habis (di-set Empty oleh kitchen).
-    if (Get.isRegistered<MenuStockService>() &&
-        !Get.find<MenuStockService>().isAvailable(menuId)) {
+    if (item.stock <= 0) {
       Get.snackbar(
         'Stok habis',
         '${item.nama} sedang tidak tersedia',
@@ -30,16 +27,28 @@ class CartController extends GetxController {
         margin: const EdgeInsets.all(16),
         duration: const Duration(milliseconds: 1600),
       );
+
       return;
     }
+
     for (int i = 0; i < items.length; i++) {
       if (items[i].menuItem.id == menuId) {
         items[i].quantity++;
+
         items.refresh();
+
         return;
       }
     }
-    items.add(CartItem(menuItem: item, quantity: 1, catatan: ''));
+
+    items.add(
+      CartItem(
+        menuItem: item,
+        quantity: 1,
+        catatan: '',
+      ),
+    );
+
     items.refresh();
   }
 

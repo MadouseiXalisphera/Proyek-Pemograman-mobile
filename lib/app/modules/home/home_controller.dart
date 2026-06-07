@@ -17,13 +17,43 @@ class HomeController extends GetxController {
   // 3. State observable
   final RxList<MenuItem> topPicks = <MenuItem>[].obs;
   final RxList<MenuItem> allMenu = <MenuItem>[].obs;
+  final RxBool isLoading = false.obs;
   final RxString searchQuery = ''.obs;
   final RxString kategori = 'all'.obs; // 'all' | 'food' | 'drink'
-  final RxString sortBy = 'default'.obs; // 'default' | 'price_asc' | 'price_desc' | 'name_asc'
+  final RxString sortBy =
+      'default'.obs; // 'default' | 'price_asc' | 'price_desc' | 'name_asc'
 
   // 3. Getter dari AuthService
   String get username => _auth.currentUser?.username ?? '-';
   String get namaMeja => _auth.currentUser?.namaMeja ?? '-';
+
+  Future loadMenu() async {
+    try {
+      isLoading.value = true;
+
+      await _menuService.fetchMenu();
+
+      print("TOTAL MENU = ${_menuService.getAllMenu().length}");
+
+      print("TOP PICK = ${_menuService.getTopPicks().length}");
+
+      topPicks.assignAll(
+        _menuService.getTopPicks(),
+      );
+
+      allMenu.assignAll(
+        _menuService.getAllMenu(),
+      );
+
+      topPicks.assignAll(
+        _menuService.getTopPicks(),
+      );
+    } catch (e) {
+      print(e);
+    } finally {
+      isLoading.value = false;
+    }
+  }
 
   // 4. Getter filteredMenu — 4 step manual
   List<MenuItem> get filteredMenu {
@@ -59,10 +89,10 @@ class HomeController extends GetxController {
 
   // 5. Lifecycle
   @override
+  @override
   void onInit() {
     super.onInit();
-    topPicks.assignAll(_menuService.getTopPicks());
-    allMenu.assignAll(_menuService.getAllMenu());
+    loadMenu();
   }
 
   // 6. Methods
