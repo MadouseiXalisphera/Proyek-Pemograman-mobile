@@ -6,12 +6,11 @@ import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_menu_image.dart';
 import '../../../data/models/cart_item_model.dart';
 
-/// Kartu satu item pesanan di layar kitchen (Image 3 & 4).
-/// Panel hijau kanan menampilkan kondisi sesuai [item.status] dan, saat di-tap,
-/// memanggil [onAdvance] untuk maju ke kondisi berikutnya.
-///   confirm → teks "Confirm Order"   (tap → ready)
-///   ready   → ikon centang (✓)        (tap → done)
-///   done    → teks "Selesai" (muted, tidak bisa di-tap)
+/// Kartu item pesanan kitchen. Panel aksi kanan = 3 kondisi (animasi warna +
+/// pergantian konten + umpan balik tekan):
+///   confirm → "Confirm Order"   (tap → ready)
+///   ready   → "Done"            (tap → done)  ← dulu ikon centang (✓)
+///   done    → "Selesai" (muted, tidak bisa di-tap)
 class KitchenOrderCard extends StatelessWidget {
   final CartItem item;
   final VoidCallback onAdvance;
@@ -34,15 +33,14 @@ class KitchenOrderCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Foto kiri (persegi setinggi kartu)
             AspectRatio(
               aspectRatio: 1,
               child: AppMenuImage(path: item.menuItem.fotoPath),
             ),
-            // Tengah: nama + jumlah
             Expanded(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: context.r(AppSizes.lg)),
+                padding:
+                    EdgeInsets.symmetric(horizontal: context.r(AppSizes.lg)),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,7 +67,6 @@ class KitchenOrderCard extends StatelessWidget {
                 ),
               ),
             ),
-            // Panel aksi kanan
             _ActionPanel(status: item.status, onAdvance: onAdvance),
           ],
         ),
@@ -78,54 +75,77 @@ class KitchenOrderCard extends StatelessWidget {
   }
 }
 
-class _ActionPanel extends StatelessWidget {
+class _ActionPanel extends StatefulWidget {
   final ItemStatus status;
   final VoidCallback onAdvance;
 
   const _ActionPanel({required this.status, required this.onAdvance});
 
   @override
+  State<_ActionPanel> createState() => _ActionPanelState();
+}
+
+class _ActionPanelState extends State<_ActionPanel> {
+  bool _down = false;
+  void _set(bool v) => setState(() => _down = v);
+
+  @override
   Widget build(BuildContext context) {
-    final isDone = status == ItemStatus.done;
+    final isDone = widget.status == ItemStatus.done;
     final bg = isDone ? AppColors.primaryLight : AppColors.primary;
 
     return GestureDetector(
-      onTap: isDone ? null : onAdvance,
-      child: Container(
-        width: context.r(118),
-        color: bg,
-        alignment: Alignment.center,
-        padding: EdgeInsets.symmetric(horizontal: context.r(AppSizes.sm)),
-        child: _content(context),
+      onTapDown: isDone ? null : (_) => _set(true),
+      onTapUp: isDone ? null : (_) => _set(false),
+      onTapCancel: isDone ? null : () => _set(false),
+      onTap: isDone ? null : widget.onAdvance,
+      child: AnimatedScale(
+        scale: _down ? 0.94 : 1.0,
+        duration: const Duration(milliseconds: 90),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+          width: context.r(118),
+          color: bg,
+          alignment: Alignment.center,
+          padding: EdgeInsets.symmetric(horizontal: context.r(AppSizes.sm)),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 240),
+            transitionBuilder: (child, anim) => ScaleTransition(
+              scale: CurvedAnimation(parent: anim, curve: Curves.easeOut),
+              child: FadeTransition(opacity: anim, child: child),
+            ),
+            child: _content(context),
+          ),
+        ),
       ),
     );
   }
 
   Widget _content(BuildContext context) {
-    switch (status) {
+    final whiteBold = TextStyle(
+      color: Colors.white,
+      fontSize: context.rf(AppSizes.fontMd),
+      fontWeight: FontWeight.w600,
+      height: 1.2,
+    );
+    switch (widget.status) {
       case ItemStatus.confirm:
-        return Text(
-          'Confirm\nOrder',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: context.rf(AppSizes.fontMd),
-            fontWeight: FontWeight.w600,
-            height: 1.2,
-          ),
-        );
+        return Text('Confirm\nOrder',
+            key: const ValueKey('confirm'),
+            textAlign: TextAlign.center,
+            style: whiteBold);
       case ItemStatus.ready:
-        return Icon(Icons.check, color: Colors.white, size: context.r(40));
+        // Dulu ikon centang (✓) → sekarang teks "Done".
+        return Text('Done',
+            key: const ValueKey('ready'),
+            textAlign: TextAlign.center,
+            style: whiteBold);
       case ItemStatus.done:
-        return Text(
-          'Selesai',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: context.rf(AppSizes.fontMd),
-            fontWeight: FontWeight.w600,
-          ),
-        );
+        return Text('Selesai',
+            key: const ValueKey('done'),
+            textAlign: TextAlign.center,
+            style: whiteBold);
     }
   }
 }

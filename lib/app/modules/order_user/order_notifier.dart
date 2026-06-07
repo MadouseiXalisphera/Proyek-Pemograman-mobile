@@ -1,33 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_notify.dart';
 import '../../core/widgets/order_status_badge.dart';
+import '../../data/models/cart_item_model.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/order_service.dart';
 
-/// Notifikasi perubahan status pesanan untuk PELANGGAN (in-app).
+/// Notifikasi PELANGGAN (popup pojok kanan-atas).
 ///
-/// LOKAL: karena semua berjalan di satu instance app, perubahan status yang
-/// dilakukan kasir/kitchen langsung memicu listener ini → snackbar di sisi
-/// user. SUPABASE nanti: ganti sumber dengan stream Realtime tabel `orders`
-/// (listener tetap sama). Untuk notifikasi saat app di background, tambahkan
-/// push (FCM) yang di-trigger dari perubahan baris — pola pemicunya identik.
+/// Dua tingkat agar presisi & tidak saling-trigger antar pesanan/menu:
+///   • Per-ITEM: saat sebuah menu menjadi "siap" → "Pesanan A1-3 • Matcha siap".
+///   • Per-ORDER: saat pembayaran dikonfirmasi / pesanan selesai / dibatalkan.
+/// Pelacakan dikunci per `orderId` dan per `orderId::menuId` sehingga aksi pada
+/// satu item tidak memicu notifikasi item/pesanan lain.
 class OrderNotifier extends GetxController {
   final OrderService _orders = Get.find<OrderService>();
   final AuthService _auth = Get.find<AuthService>();
 
-  final Map<String, String> _lastSeen = {}; // orderId -> statusKey
+  final Map<String, String> _lastOrderStatus = {}; // orderId -> statusKey
+  final Map<String, ItemStatus> _lastItem = {}; // "orderId::menuId" -> status
   Worker? _worker;
 
   String get _meja => _auth.currentUser?.namaMeja ?? '';
+  String _itemKey(String orderId, String menuId) => '$orderId::$menuId';
 
   @override
   void onInit() {
     super.onInit();
-    // Snapshot awal tanpa memberi notifikasi (status yang sudah ada).
+    // Snapshot awal (tanpa notifikasi) untuk status & item yang sudah ada.
     for (final o in _orders.ordersForMeja(_meja)) {
-      _lastSeen[o.id] = o.statusKey;
+      _lastOrderStatus[o.id] = o.statusKey;
+      for (final it in o.items) {
+        _lastItem[_itemKey(o.id, it.menuItem.id)] = it.status;
+      }
     }
     _worker = ever(_orders.orders, (_) => _check());
   }
@@ -35,44 +41,58 @@ class OrderNotifier extends GetxController {
   void _check() {
     final meja = _meja;
     if (meja.isEmpty) return;
-    for (final o in _orders.ordersForMeja(meja)) {
-      final key = o.statusKey;
-      final prev = _lastSeen[o.id];
-      _lastSeen[o.id] = key;
-      // Order baru (prev null) tidak dinotifikasi — user baru saja membuatnya.
-      if (prev != null && prev != key) _notify(key);
-    }
-  }
 
-  void _notify(String statusKey) {
-    String message;
-    switch (statusKey) {
-      case 'confirmed':
-        message = 'Pembayaran dikonfirmasi, pesanan masuk dapur.';
-        break;
-      case 'ready':
-        message = 'Pesanan siap diambil!';
-        break;
-      case 'done':
-        message = 'Pesanan selesai. Terima kasih!';
-        break;
-      case 'cancelled':
-        message = 'Pesanan dibatalkan. Hubungi kasir.';
-        break;
-      default:
-        message = OrderStatusView.of(statusKey).label;
+    for (final o in _orders.ordersForMeja(meja)) {
+      // 1) Milestone per-ORDER (pembayaran/selesai/batal).
+      final sk = o.statusKey;
+      final prevSk = _lastOrderStatus[o.id];
+      _lastOrderStatus[o.id] = sk;
+      if (prevSk != null && prevSk != sk) {
+        switch (sk) {
+          case 'confirmed':
+            AppNotify.show(
+              title: 'Pesanan ${o.displayNo}',
+              message: 'Pembayaran dikonfirmasi, pesanan masuk dapur.',
+              color: OrderStatusView.of('confirmed').color,
+              icon: Icons.verified_outlined,
+            );
+            break;
+          case 'done':
+            AppNotify.show(
+              title: 'Pesanan ${o.displayNo}',
+              message: 'Semua pesanan selesai. Terima kasih!',
+              color: OrderStatusView.of('done').color,
+              icon: Icons.check_circle_outline,
+            );
+            break;
+          case 'cancelled':
+            AppNotify.show(
+              title: 'Pesanan ${o.displayNo}',
+              message: 'Pesanan dibatalkan. Hubungi kasir.',
+              color: OrderStatusView.of('cancelled').color,
+              icon: Icons.cancel_outlined,
+            );
+            break;
+          default:
+            break; // cooking/ready ditangani per-item agar lebih spesifik
+        }
+      }
+
+      // 2) Per-ITEM: menu tertentu menjadi "siap".
+      for (final it in o.items) {
+        final key = _itemKey(o.id, it.menuItem.id);
+        final prev = _lastItem[key];
+        _lastItem[key] = it.status;
+        if (prev != null && prev != it.status && it.status == ItemStatus.ready) {
+          AppNotify.show(
+            title: 'Pesanan ${o.displayNo}',
+            message: '${it.menuItem.nama} siap diambil',
+            color: OrderStatusView.of('ready').color,
+            icon: Icons.room_service_outlined,
+          );
+        }
+      }
     }
-    final color = OrderStatusView.of(statusKey).color;
-    Get.snackbar(
-      'Update Pesanan',
-      message,
-      snackPosition: SnackPosition.TOP,
-      backgroundColor: color.withValues(alpha: 0.12),
-      colorText: color,
-      icon: Icon(Icons.notifications_active_outlined, color: color),
-      margin: const EdgeInsets.all(16),
-      duration: const Duration(seconds: 3),
-    );
   }
 
   @override

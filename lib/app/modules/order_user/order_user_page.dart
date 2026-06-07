@@ -11,8 +11,9 @@ import '../../data/models/order_model.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/order_service.dart';
 
-/// Tab Order PELANGGAN: riwayat pesanan untuk meja yang sedang login,
-/// beserta status terkini (read-only — status diubah oleh kitchen).
+/// Tab Order PELANGGAN: riwayat pesanan meja yang login + status terkini
+/// (read-only — status diubah oleh kitchen). Tiap kartu menampilkan NOMOR
+/// PESANAN agar mudah dilacak.
 class OrderUserPage extends StatelessWidget {
   const OrderUserPage({super.key});
 
@@ -44,7 +45,6 @@ class OrderUserPage extends StatelessWidget {
             ),
             Expanded(
               child: Obx(() {
-                // Membaca orderService.orders di dalam Obx agar reaktif.
                 final list = orderService.ordersForMeja(namaMeja);
                 if (list.isEmpty) return _empty(context);
                 return ListView.builder(
@@ -70,11 +70,8 @@ class OrderUserPage extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.receipt_long_outlined,
-            size: context.r(72),
-            color: AppColors.primaryLight,
-          ),
+          Icon(Icons.receipt_long_outlined,
+              size: context.r(72), color: AppColors.primaryLight),
           SizedBox(height: context.r(AppSizes.md)),
           Text(
             'Belum ada pesanan',
@@ -107,13 +104,28 @@ class _OrderCard extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                _formatTime(order.createdAt),
-                style: TextStyle(
-                  fontSize: context.rf(AppSizes.fontSm),
-                  color: AppColors.textSecondary,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pesanan ${order.displayNo}',
+                    style: TextStyle(
+                      fontSize: context.rf(AppSizes.fontMd),
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: context.r(2)),
+                  Text(
+                    _formatTime(order.createdAt),
+                    style: TextStyle(
+                      fontSize: context.rf(AppSizes.fontSm),
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
               StatusBadge(statusKey: order.statusKey),
             ],

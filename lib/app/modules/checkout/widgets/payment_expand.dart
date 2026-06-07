@@ -145,17 +145,6 @@ class PaymentExpand extends GetView<CheckoutController> {
               borderRadius: BorderRadius.circular(context.r(AppSizes.sm)),
             ),
           ),
-          SizedBox(height: context.r(AppSizes.md)),
-          SizedBox(
-            width: double.infinity,
-            child: _ghostButton(
-              context,
-              icon: Icons.download_rounded,
-              label: 'Unduh QRIS',
-              onTap: controller.downloadQris,
-              expanded: true,
-            ),
-          ),
         ],
       ),
     );
@@ -176,7 +165,7 @@ class PaymentExpand extends GetView<CheckoutController> {
         ),
         SizedBox(height: context.r(AppSizes.xs)),
         Text(
-          'Diteruskan ke kasir untuk diverifikasi.',
+          'Diteruskan ke kasir untuk diverifikasi. ${controller.proofHint}',
           style: TextStyle(
             fontSize: context.rf(AppSizes.fontSm),
             color: AppColors.textSecondary,
@@ -184,8 +173,8 @@ class PaymentExpand extends GetView<CheckoutController> {
         ),
         SizedBox(height: context.r(AppSizes.md)),
         Obx(() {
-          final path = controller.proofPath.value;
-          if (path == null || path.isEmpty) {
+          final bytes = controller.proofBytes.value;
+          if (bytes == null || bytes.isEmpty) {
             return InkWell(
               onTap: controller.pickProof,
               borderRadius: BorderRadius.circular(context.r(AppSizes.md)),
@@ -218,13 +207,13 @@ class PaymentExpand extends GetView<CheckoutController> {
               ),
             );
           }
-          // Preview bukti terunggah
+          // Preview bukti terunggah (dari bytes — aman di web).
           return Stack(
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(context.r(AppSizes.md)),
                 child: AppMenuImage(
-                  path: path,
+                  bytes: bytes,
                   width: double.infinity,
                   height: context.r(180),
                   fit: BoxFit.cover,

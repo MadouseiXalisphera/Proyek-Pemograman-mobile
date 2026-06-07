@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../core/middlewares/auth_middleware.dart';
@@ -15,12 +14,22 @@ import '../modules/shell/kitchen_shell.dart';
 import '../modules/shell/kitchen_shell_binding.dart';
 import '../modules/shell/user_shell.dart';
 import '../modules/shell/user_shell_binding.dart';
+import '../modules/splash/splash_binding.dart';
+import '../modules/splash/splash_view.dart';
 import 'app_routes.dart';
 
 abstract class AppPages {
   AppPages._();
 
   static final List<GetPage> pages = [
+    // ── Splash (entry) ────────────────────────────────────────────────
+    GetPage(
+      name: AppRoutes.splash,
+      page: () => const SplashView(),
+      binding: SplashBinding(),
+      transition: Transition.fadeIn,
+    ),
+
     GetPage(
       name: AppRoutes.login,
       page: () => const LoginView(),
