@@ -89,12 +89,15 @@ class CartView extends StatelessWidget {
                         final cartItem = cartController.items[index];
                         return _CartItemCard(
                           cartItem: cartItem,
-                          onIncrement: () => cartController.increment(
-                              cartItem.menuItem.id, cartItem.menuItem),
-                          onDecrement: () =>
-                              cartController.decrement(cartItem.menuItem.id),
-                          onDelete: () =>
-                              _showDeleteDialog(cartItem, cartController),
+                          onIncrement: () => cartController.incrementAt(index),
+                          onDecrement: () => cartController.decrementAt(index),
+                          onDelete: () => showClearAllDialog(
+                            title: 'Hapus Item',
+                            message:
+                                'Hapus ${cartItem.menuItem.nama} dari keranjang?',
+                            confirmLabel: 'Hapus',
+                            onConfirm: () => cartController.removeAt(index),
+                          ),
                         );
                       },
                     );
@@ -214,22 +217,6 @@ class CartView extends StatelessWidget {
       ),
     );
   }
-
-  void _showDeleteDialog(CartItem cartItem, CartController cartController) {
-    Get.defaultDialog(
-      title: 'Hapus Item',
-      middleText: 'Hapus ${cartItem.menuItem.nama} dari keranjang?',
-      textCancel: 'Batal',
-      textConfirm: 'Hapus',
-      confirmTextColor: Colors.white,
-      buttonColor: AppColors.error,
-      cancelTextColor: AppColors.textSecondary,
-      onConfirm: () {
-        cartController.removeItem(cartItem.menuItem.id);
-        Get.back();
-      },
-    );
-  }
 }
 
 class _CartItemCard extends StatelessWidget {
@@ -247,144 +234,128 @@ class _CartItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cart = Get.find<CartController>();
-
     return Container(
       margin: EdgeInsets.only(bottom: context.r(AppSizes.md)),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(context.r(10)),
       ),
-      padding: EdgeInsets.all(context.r(6)),
+      padding: EdgeInsets.all(context.r(8)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Foto kiri
           AppMenuImage(
             path: cartItem.menuItem.fotoPath,
-            width: context.r(115),
-            height: context.r(115),
+            width: context.r(96),
+            height: context.r(96),
             borderRadius: BorderRadius.circular(context.r(AppSizes.sm)),
           ),
           SizedBox(width: context.r(AppSizes.md)),
-          // Detail kanan
           Expanded(
-            child: SizedBox(
-              height: context.r(115),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Nama + trash
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          cartItem.menuItem.nama,
-                          style: TextStyle(
-                            fontSize: context.rf(AppSizes.fontLg),
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        cartItem.menuItem.nama,
+                        style: TextStyle(
+                          fontSize: context.rf(AppSizes.fontLg),
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: onDelete,
+                      child: Padding(
+                        padding: EdgeInsets.only(left: context.r(AppSizes.sm)),
+                        child: Icon(
+                          Icons.delete_outline,
+                          size: context.r(AppSizes.iconLg),
+                          color: AppColors.textSecondary,
                         ),
                       ),
-                      GestureDetector(
-                        onTap: onDelete,
-                        child: Padding(
-                          padding: EdgeInsets.only(left: context.r(4)),
-                          child: Icon(
-                            Icons.delete_outline,
-                            size: context.r(AppSizes.iconMd),
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
+                // Catatan per-baris (kalau ada)
+                if (cartItem.catatan.isNotEmpty) ...[
                   SizedBox(height: context.r(2)),
-                  // Quantity label
-                  Obx(() {
-                    final qty = cart.getQuantity(cartItem.menuItem.id);
-                    return Text(
-                      '${qty}x',
-                      style: TextStyle(
-                        fontSize: context.rf(AppSizes.fontXs),
-                        color: AppColors.textSecondary,
+                  Text(
+                    'Catatan: ${cartItem.catatan}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: context.rf(AppSizes.fontXs),
+                      fontStyle: FontStyle.italic,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+                SizedBox(height: context.r(AppSizes.sm)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      transitionBuilder: (child, animation) =>
+                          FadeTransition(opacity: animation, child: child),
+                      child: Text(
+                        formatRupiah(cartItem.subtotal),
+                        key: ValueKey(cartItem.subtotal),
+                        style: TextStyle(
+                          fontSize: context.rf(AppSizes.fontLg),
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    );
-                  }),
-                  const Spacer(),
-                  // Subtotal + qty control
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Subtotal dengan animasi
-                      Obx(() {
-                        final qty = cart.getQuantity(cartItem.menuItem.id);
-                        final subtotal = cartItem.menuItem.harga * qty;
-                        return AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 250),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: onDecrement,
+                          child: Icon(
+                            Icons.remove_circle_outline,
+                            size: context.r(AppSizes.iconLg),
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        SizedBox(width: context.r(AppSizes.sm)),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
                           transitionBuilder: (child, animation) =>
                               FadeTransition(opacity: animation, child: child),
                           child: Text(
-                            formatRupiah(subtotal),
-                            key: ValueKey(subtotal),
+                            '${cartItem.quantity}',
+                            key: ValueKey(cartItem.quantity),
                             style: TextStyle(
-                              fontSize: context.rf(AppSizes.fontLg),
+                              fontSize: context.rf(AppSizes.fontMd),
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimary,
                             ),
                           ),
-                        );
-                      }),
-                      // Qty control compact
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: onDecrement,
-                            child: Icon(
-                              Icons.remove_circle_outline,
-                              size: context.r(AppSizes.iconLg),
-                              color: AppColors.primary,
-                            ),
+                        ),
+                        SizedBox(width: context.r(AppSizes.sm)),
+                        GestureDetector(
+                          onTap: onIncrement,
+                          child: Icon(
+                            Icons.add_circle_outline,
+                            size: context.r(AppSizes.iconLg),
+                            color: AppColors.primary,
                           ),
-                          SizedBox(width: context.r(6)),
-                          Obx(() {
-                            final qty = cart.getQuantity(cartItem.menuItem.id);
-                            return AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              transitionBuilder: (child, animation) =>
-                                  FadeTransition(
-                                      opacity: animation, child: child),
-                              child: Text(
-                                '$qty',
-                                key: ValueKey(qty),
-                                style: TextStyle(
-                                  fontSize: context.rf(AppSizes.fontMd),
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            );
-                          }),
-                          SizedBox(width: context.r(6)),
-                          GestureDetector(
-                            onTap: onIncrement,
-                            child: Icon(
-                              Icons.add_circle_outline,
-                              size: context.r(AppSizes.iconLg),
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],

@@ -16,100 +16,109 @@ class CheckoutView extends GetView<CheckoutController> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.background,
-      child: Center(
-        child: ConstrainedBox(
-          constraints:
-              const BoxConstraints(maxWidth: AppSizes.maxContentDesktop),
-          child: Scaffold(
-            backgroundColor: AppColors.background,
-            appBar: AppBar(
-              backgroundColor: AppColors.surface,
-              elevation: 0,
-              leading: IconButton(
-                icon:
-                    const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-                onPressed: () => Get.back(),
-              ),
-              title: Text(
-                'Confirm Order',
-                style: TextStyle(
-                  fontSize: context.rf(21),
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        titleSpacing: 0,
+        title: Center(
+          child: ConstrainedBox(
+            constraints:
+                const BoxConstraints(maxWidth: AppSizes.maxContentDesktop),
+            child: Row(
+              children: [
+                IconButton(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: context.r(AppSizes.lg)),
+                  icon: const Icon(Icons.arrow_back,
+                      color: AppColors.textPrimary),
+                  onPressed: () => Get.back(),
                 ),
-              ),
-            ),
-            body: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                context.r(AppSizes.lg),
-                context.r(AppSizes.lg),
-                context.r(AppSizes.lg),
-                context.r(AppSizes.xl),
-              ),
-              child: Form(
-                key: controller.formKey,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius:
-                        BorderRadius.circular(context.r(AppSizes.radiusLg)),
-                  ),
-                  padding: EdgeInsets.all(context.r(AppSizes.xl)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      OrderSummary(
-                        items: controller.items,
-                        totalFormatted: controller.totalHargaFormatted,
-                      ),
-                      const Divider(color: AppColors.border, height: 32),
-                      Center(
-                        child: Text(
-                          controller.namaMeja,
-                          style: TextStyle(
-                            fontSize: context.rf(AppSizes.fontDisplay),
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: context.r(AppSizes.xl)),
-
-                      // Form + pilihan metode dikunci setelah confirm supaya
-                      // sesuai dengan draft pesanan yang sudah dibuat.
-                      Obx(() => AbsorbPointer(
-                            absorbing: controller.isConfirmed.value,
-                            child: _buildForm(context),
-                          )),
-
-                      // Section pembayaran expand (muncul setelah confirm).
-                      Obx(() => AnimatedSize(
-                            duration: const Duration(milliseconds: 250),
-                            alignment: Alignment.topCenter,
-                            child: controller.isConfirmed.value
-                                ? const PaymentExpand()
-                                : const SizedBox(width: double.infinity),
-                          )),
-                    ],
+                Text(
+                  'Confirm Order',
+                  style: TextStyle(
+                    fontSize: context.rf(21),
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-              ),
+              ],
             ),
-            bottomNavigationBar: _buildBottomBar(context),
           ),
         ),
       ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          context.r(AppSizes.lg),
+          context.r(AppSizes.lg),
+          context.r(AppSizes.lg),
+          context.r(AppSizes.xl),
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints:
+                const BoxConstraints(maxWidth: AppSizes.maxContentDesktop),
+            child: Form(
+              key: controller.formKey,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius:
+                      BorderRadius.circular(context.r(AppSizes.radiusLg)),
+                ),
+                padding: EdgeInsets.all(context.r(AppSizes.xl)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    OrderSummary(
+                      items: controller.items,
+                      totalFormatted: controller.totalHargaFormatted,
+                    ),
+                    const Divider(color: AppColors.border, height: 32),
+                    Center(
+                      child: Text(
+                        controller.namaMeja,
+                        style: TextStyle(
+                          fontSize: context.rf(AppSizes.fontDisplay),
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: context.r(AppSizes.xl)),
+
+                    // Hilangkan AbsorbPointer dari luar, langsung panggil _buildForm
+                    _buildForm(context),
+
+                    Obx(() => AnimatedSize(
+                          duration: const Duration(milliseconds: 250),
+                          alignment: Alignment.topCenter,
+                          child: controller.isConfirmed.value
+                              ? const PaymentExpand()
+                              : const SizedBox(width: double.infinity),
+                        )),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: _buildBottomBar(context),
     );
   }
 
   Widget _buildForm(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Costumer info',
+          'Customer info',
           style: TextStyle(
             fontSize: context.rf(AppSizes.fontLg),
             fontWeight: FontWeight.w600,
@@ -117,25 +126,35 @@ class CheckoutView extends GetView<CheckoutController> {
           ),
         ),
         SizedBox(height: context.r(AppSizes.md)),
-        TextFormField(
-          controller: controller.namaC,
-          validator: controller.validateNama,
-          decoration: _pill(context, 'Nama'),
-        ),
-        SizedBox(height: context.r(AppSizes.md)),
-        TextFormField(
-          controller: controller.hpC,
-          validator: controller.validateHp,
-          keyboardType: TextInputType.number,
-          decoration: _pill(context, 'Phone Number (opsional)'),
-        ),
-        SizedBox(height: context.r(AppSizes.md)),
-        TextFormField(
-          controller: controller.emailC,
-          validator: controller.validateEmail,
-          keyboardType: TextInputType.emailAddress,
-          decoration: _pill(context, 'Email'),
-        ),
+
+        // Letakkan AbsorbPointer DI SINI, supaya HANYA text field yang terkunci
+        Obx(() => AbsorbPointer(
+              absorbing: controller.isConfirmed.value,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: controller.namaC,
+                    validator: controller.validateNama,
+                    decoration: _pill(context, 'Nama'),
+                  ),
+                  SizedBox(height: context.r(AppSizes.md)),
+                  TextFormField(
+                    controller: controller.hpC,
+                    validator: controller.validateHp,
+                    keyboardType: TextInputType.number,
+                    decoration: _pill(context, 'Phone Number (opsional)'),
+                  ),
+                  SizedBox(height: context.r(AppSizes.md)),
+                  TextFormField(
+                    controller: controller.emailC,
+                    validator: controller.validateEmail,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: _pill(context, 'Email'),
+                  ),
+                ],
+              ),
+            )),
+
         SizedBox(height: context.r(AppSizes.xl)),
         Text(
           'Payment Method',
@@ -149,6 +168,7 @@ class CheckoutView extends GetView<CheckoutController> {
         Obx(() {
           final current = controller.paymentMethod.value;
           return Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               PaymentMethodTile(
                 title: 'Cash',
@@ -179,76 +199,97 @@ class CheckoutView extends GetView<CheckoutController> {
   }
 
   Widget _buildBottomBar(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.border, width: 1.5)),
-      ),
-      padding: EdgeInsets.all(context.r(AppSizes.lg)),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Total:',
-              style: TextStyle(
-                fontSize: context.rf(AppSizes.fontMd),
-                color: AppColors.textSecondary,
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: context.r(AppSizes.lg),
+          right: context.r(AppSizes.lg),
+          bottom: 0,
+        ),
+        child: Center(
+          heightFactor: 1.0,
+          child: ConstrainedBox(
+            constraints:
+                const BoxConstraints(maxWidth: AppSizes.maxContentDesktop),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(context.r(AppSizes.radiusLg)),
+                ),
+                border: const Border(
+                  top: BorderSide(color: AppColors.border, width: 1.5),
+                  left: BorderSide(color: AppColors.border, width: 1.5),
+                  right: BorderSide(color: AppColors.border, width: 1.5),
+                ),
               ),
-            ),
-            Text(
-              controller.totalHargaFormatted,
-              style: TextStyle(
-                fontSize: context.rf(AppSizes.fontXxl),
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            SizedBox(height: context.r(AppSizes.md)),
-            SizedBox(
-              height: context.r(AppSizes.tapTargetLg),
-              width: double.infinity,
-              child: Obx(() {
-                final confirmed = controller.isConfirmed.value;
-                final submitting = controller.isSubmitting.value;
-                return ElevatedButton(
-                  onPressed: submitting
-                      ? null
-                      : (confirmed
-                          ? controller.finalize
-                          : controller.confirmAndPay),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor:
-                        AppColors.primary.withValues(alpha: 0.6),
-                    disabledForegroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(context.r(AppSizes.radiusLg)),
+              padding: EdgeInsets.all(context.r(AppSizes.lg)),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Total:',
+                    style: TextStyle(
+                      fontSize: context.rf(AppSizes.fontMd),
+                      color: AppColors.textSecondary,
                     ),
                   ),
-                  child: submitting
-                      ? SizedBox(
-                          width: context.r(22),
-                          height: context.r(22),
-                          child: const CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2.5),
-                        )
-                      : Text(
-                          confirmed ? 'Kirim ke Kasir' : 'Confirm & Pay',
-                          style: TextStyle(
-                            fontSize: context.rf(AppSizes.fontLg),
-                            fontWeight: FontWeight.w600,
+                  Text(
+                    controller.totalHargaFormatted,
+                    style: TextStyle(
+                      fontSize: context.rf(AppSizes.fontXxl),
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: context.r(AppSizes.md)),
+                  SizedBox(
+                    height: context.r(46),
+                    width: double.infinity,
+                    child: Obx(() {
+                      final confirmed = controller.isConfirmed.value;
+                      final submitting = controller.isSubmitting.value;
+                      return ElevatedButton(
+                        onPressed: submitting
+                            ? null
+                            : (confirmed
+                                ? controller.finalize
+                                : controller.confirmAndPay),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor:
+                              AppColors.primary.withValues(alpha: 0.6),
+                          disabledForegroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                                context.r(AppSizes.radiusMd)),
                           ),
                         ),
-                );
-              }),
+                        child: submitting
+                            ? SizedBox(
+                                width: context.r(20),
+                                height: context.r(20),
+                                child: const CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2.5),
+                              )
+                            : Text(
+                                confirmed ? 'Kirim ke Kasir' : 'Confirm & Pay',
+                                style: TextStyle(
+                                  fontSize: context.rf(AppSizes.fontLg),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      );
+                    }),
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );

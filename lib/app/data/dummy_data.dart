@@ -57,6 +57,7 @@ class DummyData {
       kategori: 'drink',
       fotoPath: 'assets/menu/kopi_hitam.jpg',
       isTopPick: true,
+      stock: 10,
     ),
     MenuItem(
       id: 'matcha_latte',
@@ -66,6 +67,7 @@ class DummyData {
       kategori: 'drink',
       fotoPath: 'assets/menu/matcha_latte.jpg',
       isTopPick: true,
+      stock: 10,
     ),
     MenuItem(
       id: 'lemon_tea',
@@ -75,6 +77,7 @@ class DummyData {
       kategori: 'drink',
       fotoPath: 'assets/menu/lemon_tea.jpg',
       isTopPick: true,
+      stock: 10,
     ),
     MenuItem(
       id: 'es_teh_manis',
@@ -83,6 +86,7 @@ class DummyData {
       harga: 8000,
       kategori: 'drink',
       fotoPath: 'assets/menu/es_teh_manis.jpg',
+      stock: 10,
     ),
     MenuItem(
       id: 'nasi_goreng',
@@ -92,30 +96,37 @@ class DummyData {
       kategori: 'food',
       fotoPath: 'assets/menu/nasi_goreng.jpg',
       isTopPick: true,
+      stock: 10,
     ),
     MenuItem(
       id: 'roti_bakar',
       nama: 'Roti Bakar',
-      deskripsi: 'Roti tawar panggang dengan pilihan topping selai atau mentega',
+      deskripsi:
+          'Roti tawar panggang dengan pilihan topping selai atau mentega',
       harga: 22000,
       kategori: 'food',
       fotoPath: 'assets/menu/roti_bakar.jpg',
+      stock: 10,
     ),
     MenuItem(
       id: 'pisang_goreng',
       nama: 'Pisang Goreng',
-      deskripsi: 'Pisang kepok goreng crispy, disajikan dengan keju atau coklat',
+      deskripsi:
+          'Pisang kepok goreng crispy, disajikan dengan keju atau coklat',
       harga: 18000,
       kategori: 'food',
       fotoPath: 'assets/menu/pisang_goreng.jpg',
+      stock: 10,
     ),
     MenuItem(
       id: 'mie_goreng',
       nama: 'Mie Goreng',
-      deskripsi: 'Mie goreng dengan bumbu khas, sayuran segar, dan telur ceplok',
+      deskripsi:
+          'Mie goreng dengan bumbu khas, sayuran segar, dan telur ceplok',
       harga: 32000,
       kategori: 'food',
       fotoPath: 'assets/menu/mie_goreng.jpg',
+      stock: 10,
     ),
   ];
 }

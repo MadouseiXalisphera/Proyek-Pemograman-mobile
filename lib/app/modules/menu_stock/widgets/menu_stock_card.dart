@@ -29,6 +29,10 @@ class MenuStockCard extends StatelessWidget {
     final available = stock > 0;
     final radius = BorderRadius.circular(context.r(AppSizes.radiusLg));
 
+    print("MENU = ${item.nama}");
+    print("IMAGE = ${item.fotoPath}");
+    print("STOCK = $stock");
+
     return Container(
       margin: EdgeInsets.only(bottom: context.r(AppSizes.md)),
       decoration: BoxDecoration(color: AppColors.surface, borderRadius: radius),

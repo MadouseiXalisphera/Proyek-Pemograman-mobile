@@ -82,6 +82,7 @@ class HomeTopPicksSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
+    print("TOP PICK BUILD = ${controller.topPicks.length}");
     final listHeight = context.rv<double>(
       mobile: 320,
       tablet: 400,
@@ -120,23 +121,24 @@ class HomeTopPicksSection extends StatelessWidget {
         SizedBox(height: context.r(AppSizes.md)),
         SizedBox(
           height: listHeight,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: sidePadding),
-            itemCount: controller.topPicks.length,
-            itemBuilder: (context, index) {
-              final item = controller.topPicks[index];
-              return Padding(
-                padding: EdgeInsets.only(
-                  right: index < controller.topPicks.length - 1
-                      ? context.r(AppSizes.md)
-                      : 0,
-                ),
-                child: TopPickCard(item: item),
-              );
-            },
-          ),
-        ),
+          child: Obx(() {
+            print("TOP PICK UI = ${controller.topPicks.length}");
+
+            return ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: sidePadding),
+              itemCount: controller.topPicks.length,
+              itemBuilder: (context, index) {
+                final item = controller.topPicks[index];
+
+                return Padding(
+                  padding: EdgeInsets.only(right: 12),
+                  child: TopPickCard(item: item),
+                );
+              },
+            );
+          }),
+        )
       ],
     );
   }

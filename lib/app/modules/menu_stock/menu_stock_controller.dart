@@ -8,14 +8,34 @@ import '../../data/services/menu_stock_service.dart';
 /// MenuStockService; controller hanya menyalurkan aksi & menyiapkan data.
 class MenuStockController extends GetxController {
   final MenuStockService _stock = Get.find<MenuStockService>();
+
   final MenuService _menu = Get.find<MenuService>();
 
-  List<MenuItem> get menu => _menu.getAllMenu();
-  RxMap<String, int> get stockMap => _stock.stock;
+  final RxList<MenuItem> menu = <MenuItem>[].obs;
 
-  int stockOf(String id) => _stock.stockOf(id);
-  bool isAvailable(String id) => _stock.isAvailable(id);
+  @override
+  void onInit() {
+    super.onInit();
+    loadMenu();
+  }
 
-  void add(String id) => _stock.addStock(id);
-  void empty(String id) => _stock.emptyStock(id);
+  Future<void> loadMenu() async {
+    await _menu.fetchMenu();
+
+    menu.assignAll(
+      _menu.getAllMenu(),
+    );
+  }
+
+  Future<void> add(String id, int qty) async {
+    await _stock.addStock(id, qty);
+
+    await loadMenu();
+  }
+
+  Future<void> empty(String id) async {
+    await _stock.emptyStock(id);
+
+    await loadMenu();
+  }
 }

@@ -1,9 +1,8 @@
-import 'dart:io';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gal/gal.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -16,8 +15,14 @@ import '../../data/services/order_service.dart';
 import '../../data/services/payment_settings_service.dart';
 import '../cart/cart_controller.dart';
 import '../shell/user_shell_controller.dart';
+import '../../data/services/order_api_service.dart';
+import '../order_user/user_order_controller.dart';
 
 class CheckoutController extends GetxController {
+  static const int maxProofMb = 5;
+  static const int _maxProofBytes = maxProofMb * 1024 * 1024;
+  static const List<String> acceptedFormats = ['jpg', 'jpeg', 'png', 'webp'];
+
   // 1. Form
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final TextEditingController namaC = TextEditingController();
@@ -26,19 +31,20 @@ class CheckoutController extends GetxController {
 
   // 2. State pembayaran
   final Rx<PaymentMethod> paymentMethod = PaymentMethod.cash.obs;
-  final RxBool isConfirmed = false.obs; // section pembayaran sudah di-expand?
+  final RxBool isConfirmed = false.obs;
   final RxBool isSubmitting = false.obs;
-  final RxnString proofPath = RxnString(); // path bukti yang diunggah
+
+  final Rxn<Uint8List> proofBytes = Rxn<Uint8List>();
+  final RxnString proofName = RxnString();
 
   // 3. Dependencies
   final AuthService _auth = Get.find<AuthService>();
   final CartController _cart = Get.find<CartController>();
+  final OrderApiService _orderApi = Get.find<OrderApiService>();
   final OrderService _orderService = Get.find<OrderService>();
   final PaymentSettingsService _paymentSettings =
       Get.find<PaymentSettingsService>();
 
-  // Draft dibangun saat confirm, baru di-commit ke OrderService saat finalize
-  // (supaya tidak ada order yatim bila user mundur sebelum membayar).
   OrderModel? _draft;
 
   // 4. Getters
@@ -51,17 +57,16 @@ class CheckoutController extends GetxController {
   String get accountNumber => PaymentInfo.accountNumber;
   String get accountHolder => PaymentInfo.accountHolder;
 
-  /// Transfer & QRIS wajib bukti; cash dibayar langsung ke kasir.
   bool get requiresProof =>
       paymentMethod.value == PaymentMethod.transfer ||
       paymentMethod.value == PaymentMethod.qris;
 
-  bool get hasProof =>
-      proofPath.value != null && proofPath.value!.trim().isNotEmpty;
+  bool get hasProof => proofBytes.value != null && proofBytes.value!.isNotEmpty;
+  String get proofHint =>
+      'Format ${acceptedFormats.join('/').toUpperCase()}, maks $maxProofMb MB.';
 
-  // 5. Aksi pemilihan metode (terkunci setelah confirm)
+  // 5. Pilih metode (Kunci dilepas agar bisa diganti kapan saja)
   void selectPayment(PaymentMethod method) {
-    if (isConfirmed.value) return;
     paymentMethod.value = method;
   }
 
@@ -77,37 +82,37 @@ class CheckoutController extends GetxController {
     if (v == null || v.trim().isEmpty) return null;
     final trimmed = v.trim();
     for (int i = 0; i < trimmed.length; i++) {
-      final char = trimmed.codeUnitAt(i);
-      if (char < 48 || char > 57) return 'Hanya angka';
+      final c = trimmed.codeUnitAt(i);
+      if (c < 48 || c > 57) return 'Hanya angka';
     }
     if (trimmed.length < 8) return 'Minimal 8 digit';
+    if (trimmed.length > 15) return 'Maksimal 15 digit';
     return null;
   }
 
   String? validateEmail(String? v) {
     if (v == null || v.trim().isEmpty) return 'Email wajib diisi';
-    final trimmed = v.trim();
-    if (trimmed.length < 5) return 'Email tidak valid';
-    final atIdx = trimmed.indexOf('@');
-    if (atIdx <= 0) return 'Email tidak valid';
-    final domain = trimmed.substring(atIdx + 1);
+    final t = v.trim();
+    if (t.length < 5) return 'Email tidak valid';
+    final at = t.indexOf('@');
+    if (at <= 0) return 'Email tidak valid';
+    final domain = t.substring(at + 1);
     if (!domain.contains('.')) return 'Email tidak valid';
-    if (domain.indexOf('.') == 0 || domain.endsWith('.')) {
+    if (domain.startsWith('.') || domain.endsWith('.')) {
       return 'Email tidak valid';
     }
     return null;
   }
 
-  // 7. STEP 1 — Confirm & Pay: validasi → bangun draft → expand pembayaran.
-  //    TIDAK pindah halaman.
+  // 7. STEP 1 — Confirm & Pay
   void confirmAndPay() {
+    if (isSubmitting.value) return;
     final form = formKey.currentState;
     if (form == null || !form.validate()) return;
     if (items.isEmpty) {
       _snack('Keranjang kosong', 'Tambahkan menu dulu', AppColors.danger);
       return;
     }
-
     _draft = OrderModel(
       id: 'ORD${DateTime.now().millisecondsSinceEpoch}',
       namaPemesan: namaC.text.trim(),
@@ -122,82 +127,100 @@ class CheckoutController extends GetxController {
     isConfirmed.value = true;
   }
 
-  // 8. Salin nomor rekening (Clipboard bawaan, tanpa paket).
+  // 8. Salin nomor rekening
   Future<void> copyAccountNumber() async {
     await Clipboard.setData(ClipboardData(text: accountNumber));
     _snack('Tersalin', 'Nomor rekening disalin', AppColors.primary);
   }
 
-  // 9. Unduh QRIS ke galeri.
-  Future<void> downloadQris() async {
-    try {
-      final path = qrisPath;
-      late final Uint8List bytes;
-      if (path.startsWith('http://') || path.startsWith('https://')) {
-        _snack('QRIS dari server', 'Tahan gambar untuk menyimpan',
-            AppColors.primary);
-        return;
-      } else if (path.startsWith('/') || path.startsWith('file:')) {
-        final clean =
-            path.startsWith('file:') ? Uri.parse(path).toFilePath() : path;
-        bytes = await File(clean).readAsBytes();
-      } else {
-        final data = await rootBundle.load(path);
-        bytes = data.buffer.asUint8List();
-      }
-      await Gal.putImageBytes(bytes, name: 'qris_cafe_amba');
-      _snack('Tersimpan', 'QRIS disimpan ke galeri', AppColors.primary);
-    } catch (_) {
-      _snack('Gagal menyimpan', 'Tidak bisa menyimpan QRIS', AppColors.danger);
-    }
-  }
-
-  // 10. Upload bukti pembayaran dari galeri.
+  // 9. Upload bukti
   Future<void> pickProof() async {
     try {
       final picked = await ImagePicker()
-          .pickImage(source: ImageSource.gallery, imageQuality: 80);
-      if (picked != null) proofPath.value = picked.path;
+          .pickImage(source: ImageSource.gallery, imageQuality: 85);
+      if (picked == null) return;
+
+      final name = picked.name.toLowerCase();
+      final dot = name.lastIndexOf('.');
+      final ext = dot == -1 ? '' : name.substring(dot + 1);
+      if (!acceptedFormats.contains(ext)) {
+        _snack(
+            'Format tidak didukung',
+            'Pakai ${acceptedFormats.join('/').toUpperCase()}',
+            AppColors.danger);
+        return;
+      }
+
+      final bytes = await picked.readAsBytes();
+      if (bytes.lengthInBytes > _maxProofBytes) {
+        _snack('Ukuran terlalu besar', 'Maksimal $maxProofMb MB',
+            AppColors.danger);
+        return;
+      }
+
+      proofBytes.value = bytes;
+      proofName.value = picked.name;
     } catch (_) {
       _snack('Gagal', 'Tidak bisa membuka galeri', AppColors.danger);
     }
   }
 
-  void removeProof() => proofPath.value = null;
+  void removeProof() {
+    proofBytes.value = null;
+    proofName.value = null;
+  }
 
-  // 11. STEP 2 — Kirim ke kasir: commit order + clear cart + ke tab Order.
-  void finalize() {
+  // 10. STEP 2 — Kirim ke kasir via API
+  Future<void> finalize() async {
     if (isSubmitting.value || _draft == null) return;
     if (requiresProof && !hasProof) {
-      _snack('Bukti diperlukan', 'Unggah bukti pembayaran dulu',
-          AppColors.danger);
+      _snack(
+          'Bukti diperlukan', 'Unggah bukti pembayaran dulu', AppColors.danger);
       return;
     }
     isSubmitting.value = true;
 
-    final committed = OrderModel(
-      id: _draft!.id,
-      namaPemesan: _draft!.namaPemesan,
-      namaMeja: _draft!.namaMeja,
-      nomorHp: _draft!.nomorHp,
-      email: _draft!.email,
-      paymentMethod: _draft!.paymentMethod,
-      items: _draft!.items,
-      totalHarga: _draft!.totalHarga,
-      createdAt: _draft!.createdAt,
-      paymentProofPath: proofPath.value,
-      // paymentConfirmed default false → menunggu validasi kasir/admin
-      // sebelum tampil di kitchen.
-    );
-    _orderService.addOrder(committed);
-    _cart.clearCart();
-    isSubmitting.value = false;
+    try {
+      await _orderApi.createOrder({
+        "customer_name": _draft!.namaPemesan,
+        "table_name": _draft!.namaMeja,
+        "phone": _draft!.nomorHp ?? "",
+        "email": _draft!.email,
+        "payment_method":
+            paymentMethod.value.name, // Mengambil metode terupdate
+        "total_price": _draft!.totalHarga,
+        "payment_proof_name": proofName.value ?? "",
+        "payment_proof_base64":
+            proofBytes.value != null ? base64Encode(proofBytes.value!) : "",
+        "items": _draft!.items.map((item) {
+          return {
+            "menu_name": item.menuItem.nama,
+            "quantity": item.quantity,
+            "price": item.menuItem.harga,
+            "status": item.status.name,
+          };
+        }).toList(),
+      });
 
-    if (Get.isRegistered<UserShellController>()) {
-      Get.find<UserShellController>().goToOrder();
+      _cart.clearCart();
+
+      if (Get.isRegistered<UserShellController>()) {
+        Get.find<UserShellController>().goToOrder();
+      }
+
+      if (Get.isRegistered<UserOrderController>()) {
+        Get.find<UserOrderController>().loadOrders();
+      }
+
+      Get.back();
+
+      _snack('Pesanan dikirim', 'Pesanan berhasil masuk database',
+          AppColors.primary);
+    } catch (e) {
+      _snack('Error', e.toString(), AppColors.danger);
+    } finally {
+      isSubmitting.value = false;
     }
-    Get.back(); // tutup checkout, kembali ke shell
-    _snack('Pesanan dikirim', 'Pesanan diteruskan ke kasir', AppColors.primary);
   }
 
   void _snack(String title, String msg, Color color) {

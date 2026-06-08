@@ -35,13 +35,8 @@ class DetailController extends GetxController {
   }
 
   void tambahKeKeranjang() {
-    for (int i = 0; i < quantity.value; i++) {
-      _cart.increment(item.id, item);
-    }
-    final note = catatanC.text.trim();
-    if (note.isNotEmpty) {
-      _cart.setCatatan(item.id, note);
-    }
+    // Satu panggilan, tanpa loop (#3). Catatan ikut per-baris (#2).
+    _cart.addItem(item, quantity.value, catatanC.text.trim());
     Get.back();
     Get.snackbar(
       'Berhasil',

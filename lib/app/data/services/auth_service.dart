@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../../core/config/api_config.dart';
 
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,38 +26,52 @@ class AuthService {
   // LOGIN
   // Return null kalau berhasil, atau pesan error kalau gagal.
   // ---------------------------------------------------------------------------
-  Future<String?> login(String username, String password) async {
-    // Simulasi delay network 600ms
-    await Future.delayed(const Duration(milliseconds: 600));
+  Future<String?> login(
+    String username,
+    String password,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse(
+          '${ApiConfig.baseUrl}/auth/login.php',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'username': username,
+          'password': password,
+        }),
+      );
 
-    // Cari user yang cocok pakai loop manual (sederhana & jelas)
-    Map<String, dynamic>? matched;
-    for (int i = 0; i < DummyData.users.length; i++) {
-      final u = DummyData.users[i];
-      if (u['username'] == username && u['password'] == password) {
-        matched = u;
-        break;
+      print(response.body);
+
+      final data = jsonDecode(response.body);
+
+      if (data['success'] != true) {
+        return data['message'];
       }
+
+      final user = data['user'];
+
+      _currentUser = UserModel(
+        username: user['username'],
+        role: user['role'],
+        namaMeja: user['table_number']?.toString(),
+      );
+
+      await _prefs.setString(
+        _sessionKey,
+        jsonEncode(
+          _currentUser!.toJson(),
+        ),
+      );
+
+      return null;
+    } catch (e) {
+      print('Login error: $e');
+      return 'Tidak dapat terhubung ke server';
     }
-
-    if (matched == null) {
-      return 'Username atau password salah';
-    }
-
-    // Semua role (user / kitchen / admin) boleh login. Routing setelah login
-    // dicabang berdasarkan role lewat AppRoutes.shellForRole().
-    // Buat objek user dan simpan ke memory + storage
-    _currentUser = UserModel(
-      username: matched['username'] as String,
-      role: matched['role'] as String,
-      namaMeja: matched['namaMeja'] as String?,
-    );
-
-    await _prefs.setString(
-      _sessionKey,
-      jsonEncode(_currentUser!.toJson()),
-    );
-    return null;
   }
 
   // ---------------------------------------------------------------------------
@@ -85,16 +101,35 @@ class AuthService {
   // Saat migrasi Supabase, ganti dengan re-authentication (signInWithPassword
   // memakai email/username user yang sedang login).
   // ---------------------------------------------------------------------------
-  bool verifyPassword(String password) {
-    final user = _currentUser;
-    if (user == null) return false;
-    for (int i = 0; i < DummyData.users.length; i++) {
-      final u = DummyData.users[i];
-      if (u['username'] == user.username) {
-        return u['password'] == password;
-      }
+  Future<bool> verifyPassword(
+    String password,
+  ) async {
+    try {
+      print("USERNAME = ${_currentUser?.username}");
+      print("PASSWORD = $password");
+      final response = await http.post(
+        Uri.parse(
+          '${ApiConfig.baseUrl}/auth/verify_password.php',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'username': _currentUser?.username,
+          'password': password,
+        }),
+      );
+
+      print(response.body);
+      print("VERIFY RESPONSE = ${response.body}");
+
+      final data = jsonDecode(response.body);
+
+      return data['success'] == true;
+    } catch (e) {
+      print(e);
+      return false;
     }
-    return false;
   }
 
   // ---------------------------------------------------------------------------

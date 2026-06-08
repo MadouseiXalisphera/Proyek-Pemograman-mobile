@@ -4,6 +4,9 @@
 abstract class AppRoutes {
   AppRoutes._();
 
+  // Pintu masuk app: splash beranimasi (init + keputusan route ada di sini).
+  static const String splash = '/splash';
+
   static const String login = '/login';
 
   // Shell utama per role (berisi bottom nav + tab-nya masing-masing).

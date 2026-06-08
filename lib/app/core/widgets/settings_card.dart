@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_sizes.dart';
 import '../utils/responsive.dart';
+import 'responsive_wrapper.dart';
 
 /// Field read-only bergaya pill (abu-abu) dengan ikon di kanan.
 /// Dipakai di kartu Settings untuk menampilkan username / nama meja / role.
@@ -62,9 +63,10 @@ class SettingsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: context.r(AppSizes.xl)),
-        child: Column(
+      child: ResponsiveWrapper(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: context.r(AppSizes.lg)),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(height: context.r(AppSizes.lg)),
@@ -132,6 +134,7 @@ class SettingsCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

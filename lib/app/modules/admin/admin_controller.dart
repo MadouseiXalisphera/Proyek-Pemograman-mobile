@@ -1,28 +1,70 @@
+import 'package:flutter/material.dart'; // Tambahkan import untuk GetX
 import 'package:get/get.dart';
+import '../../data/services/order_api_service.dart';
 
-import '../../data/models/order_model.dart';
-import '../../data/services/order_service.dart';
-
-/// Controller sisi admin/kasir.
-///
-/// - `awaiting`  : pesanan menunggu validasi pembayaran (manual).
-/// - `all`       : rekap seluruh pesanan (tercatat di admin).
-/// Validasi manual: confirm() menandai sudah dibayar → pesanan masuk kitchen;
-/// cancel() menolak. Saat Supabase, kedua aksi jadi UPDATE kolom di tabel
-/// `orders` dan otomatis tersinkron ke perangkat lain via Realtime.
 class AdminController extends GetxController {
-  final OrderService _orders = Get.find<OrderService>();
+  final OrderApiService _api = Get.find<OrderApiService>();
 
-  RxList<OrderModel> get reactiveSource => _orders.orders;
+  final RxList<dynamic> pendingOrders = <dynamic>[].obs;
+  final RxList<dynamic> historyOrders = <dynamic>[].obs;
 
-  List<OrderModel> get awaiting => _orders.ordersAwaitingPayment();
+  final RxBool isLoading = false.obs;
 
-  List<OrderModel> get all {
-    final list = List<OrderModel>.from(_orders.orders);
-    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return list;
+  @override
+  void onInit() {
+    super.onInit();
+    loadAllData();
   }
 
-  void confirm(String orderId) => _orders.confirmPayment(orderId);
-  void cancel(String orderId) => _orders.cancelOrder(orderId);
+  Future<void> loadAllData() async {
+    isLoading.value = true;
+    try {
+      final pending = await _api.getPendingPayments();
+      final history = await _api.getAllOrders();
+      pendingOrders.assignAll(pending);
+      historyOrders.assignAll(history);
+    } catch (e) {
+      print("Error loading data: $e");
+      // MUNCULKAN ERROR DI LAYAR KASIR!
+      Get.snackbar(
+        'Gagal Mengambil Data',
+        e.toString(),
+        duration: const Duration(seconds: 5),
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> confirm(String orderId) async {
+    try {
+      await _api.confirmPayment(orderId);
+      Get.snackbar('Sukses', 'Pembayaran berhasil dikonfirmasi!');
+      loadAllData(); // Refresh data otomatis
+    } catch (e) {
+      Get.snackbar('Error', e.toString());
+    }
+  }
+
+  Future<void> cancel(String orderId) async {
+    try {
+      await _api.cancelOrder(orderId);
+      Get.snackbar(
+        'Ditolak',
+        'Pesanan berhasil dibatalkan',
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+      loadAllData(); // Refresh data agar pesanan yang ditolak hilang dari daftar
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        e.toString(),
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    }
+  }
 }

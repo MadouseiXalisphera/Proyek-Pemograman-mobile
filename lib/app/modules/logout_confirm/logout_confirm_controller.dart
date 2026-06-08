@@ -35,9 +35,12 @@ class LogoutConfirmController extends GetxController {
     // Simulasi delay verifikasi (mengikuti pola AuthService.login).
     await Future.delayed(const Duration(milliseconds: 400));
 
-    final ok = _auth.verifyPassword(passwordC.text);
+    final ok = await _auth.verifyPassword(
+      passwordC.text,
+    );
     if (!ok) {
       isLoading.value = false;
+      passwordC.clear();
       Get.snackbar(
         'Verifikasi Gagal',
         'Password salah, coba lagi',

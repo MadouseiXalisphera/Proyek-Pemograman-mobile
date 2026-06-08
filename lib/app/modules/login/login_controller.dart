@@ -59,6 +59,8 @@ class LoginController extends GetxController {
     isLoading.value = false;
 
     if (error != null) {
+      // Bersihkan password, biarkan username terisi.
+      passwordC.clear();
       Get.snackbar(
         'Login Gagal',
         error,

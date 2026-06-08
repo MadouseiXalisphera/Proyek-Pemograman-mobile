@@ -8,7 +8,6 @@ import '../../core/widgets/responsive_wrapper.dart';
 import 'menu_stock_controller.dart';
 import 'widgets/menu_stock_card.dart';
 
-/// Tab Menu Stock (kitchen): daftar menu + tombol Add (+100) / Empty (→0).
 class MenuStockPage extends GetView<MenuStockController> {
   const MenuStockPage({super.key});
 
@@ -32,7 +31,6 @@ class MenuStockPage extends GetView<MenuStockController> {
             ),
             Expanded(
               child: Obx(() {
-                final stockMap = controller.stockMap; // dependency reaktif
                 final menu = controller.menu;
                 return ListView.builder(
                   padding: EdgeInsets.fromLTRB(context.r(AppSizes.lg), 0,
@@ -42,8 +40,41 @@ class MenuStockPage extends GetView<MenuStockController> {
                     final item = menu[i];
                     return MenuStockCard(
                       item: item,
-                      stock: stockMap[item.id] ?? 0,
-                      onAdd: () => controller.add(item.id),
+                      stock: item.stock,
+                      onAdd: () {
+                        final qtyController = TextEditingController();
+
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Tambah Stok'),
+                            content: TextField(
+                              controller: qtyController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                hintText: 'Masukkan jumlah stok',
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Batal'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  final qty =
+                                      int.tryParse(qtyController.text) ?? 0;
+                                  if (qty > 0) {
+                                    controller.add(item.id, qty);
+                                  }
+                                  Navigator.pop(context);
+                                },
+                                child: const Text('Tambah'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                       onEmpty: () => controller.empty(item.id),
                     );
                   },

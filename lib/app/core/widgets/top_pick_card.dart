@@ -18,6 +18,9 @@ class TopPickCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print(item.nama);
+    print(item.fotoPath);
+    print("TOP PICK CARD BUILD = ${item.nama}");
     final CartController cart = Get.find<CartController>();
 
     // Fix Issue 4: tinggi card dinaikkan 320/400/450 (sebelumnya 300/360/400)
@@ -43,8 +46,7 @@ class TopPickCard extends StatelessWidget {
       height: cardHeight,
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius:
-            BorderRadius.circular(context.r(AppSizes.radiusXl)),
+        borderRadius: BorderRadius.circular(context.r(AppSizes.radiusXl)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,8 +126,7 @@ class TopPickCard extends StatelessWidget {
                           child: qty == 0
                               ? GestureDetector(
                                   key: const ValueKey('add'),
-                                  onTap: () =>
-                                      cart.increment(item.id, item),
+                                  onTap: () => cart.increment(item.id, item),
                                   child: Icon(
                                     Icons.add_circle_outline,
                                     size: context.r(30),
@@ -137,8 +138,7 @@ class TopPickCard extends StatelessWidget {
                                   quantity: qty,
                                   onIncrement: () =>
                                       cart.increment(item.id, item),
-                                  onDecrement: () =>
-                                      cart.decrement(item.id),
+                                  onDecrement: () => cart.decrement(item.id),
                                 ),
                         );
                       }),
