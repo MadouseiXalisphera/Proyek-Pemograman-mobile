@@ -50,7 +50,7 @@ class LogoutConfirmView extends GetView<LogoutConfirmController> {
                     ),
                     SizedBox(height: context.r(AppSizes.xl)),
 
-                    // Field password
+                    // Field password — ikon MATA (sama seperti halaman login).
                     Obx(() {
                       return TextFormField(
                         controller: controller.passwordC,
@@ -58,8 +58,7 @@ class LogoutConfirmView extends GetView<LogoutConfirmController> {
                         obscureText: controller.obscure.value,
                         textInputAction: TextInputAction.done,
                         onFieldSubmitted: (_) => controller.submit(),
-                        style:
-                            TextStyle(fontSize: context.rf(AppSizes.fontMd)),
+                        style: TextStyle(fontSize: context.rf(AppSizes.fontMd)),
                         decoration: InputDecoration(
                           hintText: 'Password',
                           hintStyle:
@@ -70,14 +69,18 @@ class LogoutConfirmView extends GetView<LogoutConfirmController> {
                             horizontal: context.r(AppSizes.lg),
                             vertical: context.r(AppSizes.lg),
                           ),
-                          suffixIcon: IconButton(
-                            onPressed: controller.toggleObscure,
-                            icon: Icon(
-                              controller.obscure.value
-                                  ? Icons.vpn_key_outlined
-                                  : Icons.vpn_key,
-                              color: AppColors.textSecondary,
-                              size: context.r(22),
+                          suffixIcon: Padding(
+                            padding:
+                                EdgeInsets.only(right: context.r(AppSizes.sm)),
+                            child: IconButton(
+                              onPressed: controller.toggleObscure,
+                              icon: Icon(
+                                controller.obscure.value
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: AppColors.textSecondary,
+                                size: context.r(22),
+                              ),
                             ),
                           ),
                           border: OutlineInputBorder(

@@ -9,12 +9,6 @@
 *.env.local
 
 # Mengabaikan
-/ARCHITECTURE.md
-/BUILD_PROMPTS.md
-/CONVENTIONS.md
-/CLAUDE.md
-/ROADMAP.md
-/PRD.md
 /pubspec_dependencies.yaml
 docs/
 .DS_Store

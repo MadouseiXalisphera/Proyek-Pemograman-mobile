@@ -4,8 +4,6 @@ import '../../core/widgets/app_bottom_nav.dart';
 
 // ════════════════════════════════════════════════════════════════════════
 // Indeks tab tiap role + daftar NavItem-nya.
-// Dipisah dari view supaya view tetap ramping dan urutan tab terdokumentasi
-// di satu tempat. Index controller mengacu ke konstanta di sini.
 // ════════════════════════════════════════════════════════════════════════
 
 /// Tab shell PELANGGAN (role `user`). Urutan sama dengan IndexedStack.
@@ -42,12 +40,13 @@ class UserTab {
   ];
 }
 
-/// Tab shell KITCHEN (role `kitchen`).
+/// Tab shell KITCHEN (role `kitchen`). + Riwayat (index 2).
 class KitchenTab {
   KitchenTab._();
   static const int order = 0;
   static const int menuStock = 1;
-  static const int settings = 2;
+  static const int history = 2;
+  static const int settings = 3;
 
   static const List<NavItem> items = [
     NavItem(
@@ -61,6 +60,11 @@ class KitchenTab {
       label: 'Menu Stock',
     ),
     NavItem(
+      icon: Icons.history_outlined,
+      activeIcon: Icons.history,
+      label: 'Riwayat',
+    ),
+    NavItem(
       icon: Icons.settings_outlined,
       activeIcon: Icons.settings,
       label: 'Settings',
@@ -69,8 +73,6 @@ class KitchenTab {
 }
 
 /// Tab shell ADMIN/KASIR (role `admin`).
-/// Struktur disiapkan untuk pengembangan 5–10 halaman lanjutan; sekarang
-/// sebagian besar masih placeholder.
 class AdminTab {
   AdminTab._();
   static const int dashboard = 0;

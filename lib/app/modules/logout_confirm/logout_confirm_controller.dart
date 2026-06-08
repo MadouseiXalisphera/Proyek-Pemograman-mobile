@@ -40,6 +40,7 @@ class LogoutConfirmController extends GetxController {
     );
     if (!ok) {
       isLoading.value = false;
+      passwordC.clear();
       Get.snackbar(
         'Verifikasi Gagal',
         'Password salah, coba lagi',

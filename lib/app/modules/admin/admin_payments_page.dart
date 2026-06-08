@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -8,6 +10,9 @@ import '../../core/utils/responsive.dart';
 import '../../core/widgets/responsive_wrapper.dart';
 import 'admin_controller.dart';
 
+/// Tab Payments ADMIN/KASIR: validasi pembayaran manual.
+/// Konfirmasi → pesanan masuk antrian kitchen. Tolak → dibatalkan.
+/// Tiap kartu menampilkan NOMOR PESANAN agar mudah dicocokkan dgn user/kitchen.
 class AdminPaymentsPage extends GetView<AdminController> {
   const AdminPaymentsPage({super.key});
 
@@ -106,6 +111,16 @@ class _PaymentCardAPI extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Nomor pesanan (pelacakan lintas peran)
+          Text(
+            'Pesanan ${order.displayNo}',
+            style: TextStyle(
+              fontSize: context.rf(AppSizes.fontMd),
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+            ),
+          ),
+          SizedBox(height: context.r(AppSizes.xs)),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -128,6 +143,39 @@ class _PaymentCardAPI extends StatelessWidget {
             'Total: Rp ${orderData['total_price']}',
             style: TextStyle(fontSize: context.rf(AppSizes.fontMd)),
           ),
+          if (order.paymentProofBytes != null) ...[
+            SizedBox(height: context.r(AppSizes.md)),
+            Text(
+              'Bukti pembayaran:',
+              style: TextStyle(
+                fontSize: context.rf(AppSizes.fontSm),
+                color: AppColors.textSecondary,
+              ),
+            ),
+            SizedBox(height: context.r(AppSizes.xs)),
+            GestureDetector(
+              onTap: () => _viewProof(context, order.paymentProofBytes!),
+              child: AppMenuImage(
+                bytes: order.paymentProofBytes,
+                width: double.infinity,
+                height: context.r(160),
+                fit: BoxFit.cover,
+                borderRadius: BorderRadius.circular(context.r(AppSizes.md)),
+              ),
+            ),
+          ] else ...[
+            SizedBox(height: context.r(AppSizes.sm)),
+            Text(
+              order.paymentMethod == PaymentMethod.cash
+                  ? 'Bayar tunai di kasir.'
+                  : 'Belum ada bukti.',
+              style: TextStyle(
+                fontSize: context.rf(AppSizes.fontSm),
+                fontStyle: FontStyle.italic,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
           SizedBox(height: context.r(AppSizes.lg)),
 
           // 2. Ubah bagian tombol menjadi Row berisi 2 tombol (Tolak & Konfirmasi)
@@ -172,6 +220,23 @@ class _PaymentCardAPI extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _viewProof(BuildContext context, Uint8List bytes) {
+    Get.dialog(
+      Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.all(context.r(AppSizes.lg)),
+        child: GestureDetector(
+          onTap: () => Get.back(),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(context.r(AppSizes.md)),
+            child: AppMenuImage(bytes: bytes, fit: BoxFit.contain),
+          ),
+        ),
+      ),
+      barrierColor: Colors.black.withValues(alpha: 0.8),
     );
   }
 }
