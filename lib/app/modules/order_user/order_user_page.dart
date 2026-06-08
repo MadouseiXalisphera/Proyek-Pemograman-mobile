@@ -7,9 +7,6 @@ import '../../core/utils/responsive.dart';
 import '../../core/widgets/responsive_wrapper.dart';
 import 'user_order_controller.dart';
 
-/// Tab Order PELANGGAN: riwayat pesanan meja yang login + status terkini
-/// (read-only — status diubah oleh kitchen). Tiap kartu menampilkan NOMOR
-/// PESANAN agar mudah dilacak.
 class OrderUserPage extends StatelessWidget {
   const OrderUserPage({super.key});
 
@@ -41,10 +38,8 @@ class OrderUserPage extends StatelessWidget {
             Expanded(
               child: Obx(() {
                 final list = controller.orders;
-                final list = orderService.ordersForMeja(namaMeja);
                 if (list.isEmpty) return _empty(context);
 
-                // Tambahkan RefreshIndicator agar user bisa tarik-refresh pesanan
                 return RefreshIndicator(
                   onRefresh: () => controller.loadOrders(),
                   child: ListView.builder(
@@ -58,7 +53,6 @@ class OrderUserPage extends StatelessWidget {
                     itemBuilder: (_, i) {
                       final item = list[i];
 
-                      // Cek warna berdasarkan status
                       Color statusColor = Colors.black;
                       if (item['cancelled'].toString() == '1') {
                         statusColor = Colors.red;
@@ -95,8 +89,6 @@ class OrderUserPage extends StatelessWidget {
                                 ],
                               ),
                             ),
-
-                            // TAMPILKAN TOMBOL KONFIRMASI HANYA JIKA DIBATALKAN
                             if (isCancelled)
                               Container(
                                 width: double.infinity,
@@ -149,113 +141,13 @@ class OrderUserPage extends StatelessWidget {
   }
 }
 
-// Fungsi statusLabel diubah untuk menerima Map data dan mengecek kondisi secara berurutan
 String statusLabel(Map<String, dynamic> item) {
-  // 1. Cek apakah dibatalkan
   if (item['cancelled'].toString() == '1') {
     return 'Pesanan Dibatalkan';
-class _OrderCard extends StatelessWidget {
-  final OrderModel order;
-  const _OrderCard({required this.order});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(bottom: context.r(AppSizes.md)),
-      padding: EdgeInsets.all(context.r(AppSizes.lg)),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(context.r(AppSizes.radiusLg)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Pesanan ${order.displayNo}',
-                    style: TextStyle(
-                      fontSize: context.rf(AppSizes.fontMd),
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  SizedBox(height: context.r(2)),
-                  Text(
-                    _formatTime(order.createdAt),
-                    style: TextStyle(
-                      fontSize: context.rf(AppSizes.fontSm),
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-              StatusBadge(statusKey: order.statusKey),
-            ],
-          ),
-          SizedBox(height: context.r(AppSizes.md)),
-          for (final item in order.items)
-            Padding(
-              padding: EdgeInsets.only(bottom: context.r(AppSizes.xs)),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${item.menuItem.nama}  x${item.quantity}',
-                      style: TextStyle(
-                        fontSize: context.rf(AppSizes.fontMd),
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    formatRupiah(item.subtotal),
-                    style: TextStyle(
-                      fontSize: context.rf(AppSizes.fontMd),
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          Divider(height: context.r(AppSizes.lg), color: AppColors.border),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Total',
-                style: TextStyle(
-                  fontSize: context.rf(AppSizes.fontMd),
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              Text(
-                formatRupiah(order.totalHarga),
-                style: TextStyle(
-                  fontSize: context.rf(AppSizes.fontLg),
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
-
-  // 2. Cek apakah belum dibayar
   if (item['payment_confirmed'].toString() == '0') {
     return 'Menunggu Pembayaran';
   }
-
-  // 3. Jika sudah dibayar, cek status dari dapur
   switch (item['status']) {
     case 'confirm':
       return 'Menunggu Diproses Dapur';

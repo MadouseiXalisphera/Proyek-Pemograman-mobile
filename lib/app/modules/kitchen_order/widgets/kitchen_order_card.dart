@@ -3,16 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/utils/responsive.dart';
-import '../../../core/widgets/app_menu_image.dart';
-import '../../../data/models/cart_item_model.dart';
 
-/// Kartu item pesanan kitchen. Panel aksi kanan = 3 kondisi (animasi warna +
-/// pergantian konten + umpan balik tekan):
-///   confirm → "Confirm Order"   (tap → ready)
-///   ready   → "Done"            (tap → done)  ← dulu ikon centang (✓)
-///   done    → "Selesai" (muted, tidak bisa di-tap)
 class KitchenOrderCard extends StatelessWidget {
-  final CartItem item;
+  // Ubah dari CartItem menjadi Map JSON
+  final Map<String, dynamic> item;
   final VoidCallback onAdvance;
 
   const KitchenOrderCard({
@@ -26,27 +20,45 @@ class KitchenOrderCard extends StatelessWidget {
     final radius = BorderRadius.circular(context.r(AppSizes.radiusLg));
     return Container(
       margin: EdgeInsets.only(bottom: context.r(AppSizes.md)),
-      height: context.r(112),
+      height: context.r(110), // Fixed height agar rapi
       decoration: BoxDecoration(color: AppColors.surface, borderRadius: radius),
       child: ClipRRect(
         borderRadius: radius,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            AspectRatio(
-              aspectRatio: 1,
-              child: AppMenuImage(path: item.menuItem.fotoPath),
+            // Bagian Kiri: Tampilan Meja pengganti gambar
+            Container(
+              width: context.r(85),
+              color: AppColors.primaryLight.withOpacity(0.3),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.table_restaurant, color: AppColors.primary),
+                  Text('Meja',
+                      style: TextStyle(fontSize: context.rf(AppSizes.fontSm))),
+                  Text(
+                    item['table_name'].toString(),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: context.rf(AppSizes.fontDisplay),
+                        color: AppColors.primary),
+                  ),
+                ],
+              ),
             ),
+            // Bagian Tengah: Detail Pesanan
             Expanded(
               child: Padding(
-                padding:
-                    EdgeInsets.symmetric(horizontal: context.r(AppSizes.lg)),
+                padding: EdgeInsets.symmetric(
+                    horizontal: context.r(AppSizes.md),
+                    vertical: context.r(AppSizes.sm)),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item.menuItem.nama,
+                      item['menu_name'] ?? '-',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -57,17 +69,20 @@ class KitchenOrderCard extends StatelessWidget {
                     ),
                     SizedBox(height: context.r(AppSizes.xs)),
                     Text(
-                      'X${item.quantity}',
+                      'Qty: ${item['quantity']} | Cust: ${item['customer_name']}',
                       style: TextStyle(
                         fontSize: context.rf(AppSizes.fontMd),
                         color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            _ActionPanel(status: item.status, onAdvance: onAdvance),
+            // Bagian Kanan: Tombol Animasi
+            _ActionPanel(
+                status: item['status'].toString(), onAdvance: onAdvance),
           ],
         ),
       ),
@@ -76,7 +91,7 @@ class KitchenOrderCard extends StatelessWidget {
 }
 
 class _ActionPanel extends StatefulWidget {
-  final ItemStatus status;
+  final String status;
   final VoidCallback onAdvance;
 
   const _ActionPanel({required this.status, required this.onAdvance});
@@ -91,7 +106,7 @@ class _ActionPanelState extends State<_ActionPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final isDone = widget.status == ItemStatus.done;
+    final isDone = widget.status == 'done';
     final bg = isDone ? AppColors.primaryLight : AppColors.primary;
 
     return GestureDetector(
@@ -105,7 +120,7 @@ class _ActionPanelState extends State<_ActionPanel> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
-          width: context.r(118),
+          width: context.r(100),
           color: bg,
           alignment: Alignment.center,
           padding: EdgeInsets.symmetric(horizontal: context.r(AppSizes.sm)),
@@ -130,18 +145,18 @@ class _ActionPanelState extends State<_ActionPanel> {
       height: 1.2,
     );
     switch (widget.status) {
-      case ItemStatus.confirm:
+      case 'confirm':
         return Text('Confirm\nOrder',
             key: const ValueKey('confirm'),
             textAlign: TextAlign.center,
             style: whiteBold);
-      case ItemStatus.ready:
-        // Dulu ikon centang (✓) → sekarang teks "Done".
+      case 'ready':
         return Text('Done',
             key: const ValueKey('ready'),
             textAlign: TextAlign.center,
             style: whiteBold);
-      case ItemStatus.done:
+      case 'done':
+      default:
         return Text('Selesai',
             key: const ValueKey('done'),
             textAlign: TextAlign.center,

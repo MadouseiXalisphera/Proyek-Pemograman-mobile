@@ -1,27 +1,26 @@
 import 'package:get/get.dart';
+import '../../data/services/order_api_service.dart';
 
-import '../../data/models/order_model.dart';
-import '../../data/services/order_service.dart';
-
-/// Controller tab RIWAYAT kitchen.
-///
-/// Riwayat = semua pesanan yang sudah DIBAYAR (paymentConfirmed) & tidak
-/// dibatalkan, termasuk yang sudah selesai. Beda dengan tab "Order" yang
-/// hanya menampilkan yang BELUM selesai. Logika baca dari OrderService yang
-/// sama (reaktif), tanpa menyentuh state lain.
 class KitchenHistoryController extends GetxController {
-  final OrderService _orderService = Get.find<OrderService>();
+  final OrderApiService _api = Get.find<OrderApiService>();
+  final RxList<dynamic> historyOrders = <dynamic>[].obs;
+  final RxBool isLoading = false.obs;
 
-  RxList<OrderModel> get _orders => _orderService.orders;
+  @override
+  void onInit() {
+    super.onInit();
+    loadHistory();
+  }
 
-  /// Semua pesanan yang relevan untuk kitchen, terbaru di atas.
-  List<OrderModel> get history {
-    final result = <OrderModel>[];
-    for (int i = 0; i < _orders.length; i++) {
-      final o = _orders[i];
-      if (o.paymentConfirmed && !o.cancelled) result.add(o);
+  Future<void> loadHistory() async {
+    isLoading.value = true;
+    try {
+      final data = await _api.getKitchenHistory();
+      historyOrders.assignAll(data);
+    } catch (e) {
+      print("Error Kitchen History: $e");
+    } finally {
+      isLoading.value = false;
     }
-    result.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return result;
   }
 }

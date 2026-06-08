@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -15,11 +16,9 @@ import '../../data/services/payment_settings_service.dart';
 import '../cart/cart_controller.dart';
 import '../shell/user_shell_controller.dart';
 import '../../data/services/order_api_service.dart';
+import '../order_user/user_order_controller.dart';
 
 class CheckoutController extends GetxController {
-  // Aturan bukti pembayaran (VALIDASI INPUT ada di FRONT END selama belum ada
-  // backend; saat Supabase, batas ukuran/format WAJIB juga dipaksa di server
-  // lewat Storage policy. Lihat docs/BACKEND.md).
   static const int maxProofMb = 5;
   static const int _maxProofBytes = maxProofMb * 1024 * 1024;
   static const List<String> acceptedFormats = ['jpg', 'jpeg', 'png', 'webp'];
@@ -35,7 +34,6 @@ class CheckoutController extends GetxController {
   final RxBool isConfirmed = false.obs;
   final RxBool isSubmitting = false.obs;
 
-  // Bukti bayar disimpan sebagai BYTES (bekerja juga di web).
   final Rxn<Uint8List> proofBytes = Rxn<Uint8List>();
   final RxnString proofName = RxnString();
 
@@ -63,15 +61,12 @@ class CheckoutController extends GetxController {
       paymentMethod.value == PaymentMethod.transfer ||
       paymentMethod.value == PaymentMethod.qris;
 
-  bool get hasProof =>
-      proofBytes.value != null && proofBytes.value!.isNotEmpty;
-
+  bool get hasProof => proofBytes.value != null && proofBytes.value!.isNotEmpty;
   String get proofHint =>
       'Format ${acceptedFormats.join('/').toUpperCase()}, maks $maxProofMb MB.';
 
-  // 5. Pilih metode (terkunci setelah confirm)
+  // 5. Pilih metode (Kunci dilepas agar bisa diganti kapan saja)
   void selectPayment(PaymentMethod method) {
-    if (isConfirmed.value) return;
     paymentMethod.value = method;
   }
 
@@ -109,9 +104,8 @@ class CheckoutController extends GetxController {
     return null;
   }
 
-  // 7. STEP 1 — Confirm & Pay (tanpa pindah halaman)
+  // 7. STEP 1 — Confirm & Pay
   void confirmAndPay() {
-    // Guard anti double-klik saat sedang submit.
     if (isSubmitting.value) return;
     final form = formKey.currentState;
     if (form == null || !form.validate()) return;
@@ -133,30 +127,30 @@ class CheckoutController extends GetxController {
     isConfirmed.value = true;
   }
 
-  // 8. Salin nomor rekening (tanpa paket)
+  // 8. Salin nomor rekening
   Future<void> copyAccountNumber() async {
     await Clipboard.setData(ClipboardData(text: accountNumber));
     _snack('Tersalin', 'Nomor rekening disalin', AppColors.primary);
   }
 
-  // 9. Upload bukti pembayaran (VALIDASI format + ukuran di FRONT END)
+  // 9. Upload bukti
   Future<void> pickProof() async {
     try {
       final picked = await ImagePicker()
           .pickImage(source: ImageSource.gallery, imageQuality: 85);
       if (picked == null) return;
 
-      // Validasi format dari ekstensi nama file.
       final name = picked.name.toLowerCase();
       final dot = name.lastIndexOf('.');
       final ext = dot == -1 ? '' : name.substring(dot + 1);
       if (!acceptedFormats.contains(ext)) {
-        _snack('Format tidak didukung',
-            'Pakai ${acceptedFormats.join('/').toUpperCase()}', AppColors.danger);
+        _snack(
+            'Format tidak didukung',
+            'Pakai ${acceptedFormats.join('/').toUpperCase()}',
+            AppColors.danger);
         return;
       }
 
-      // Validasi ukuran (≤ maxProofMb).
       final bytes = await picked.readAsBytes();
       if (bytes.lengthInBytes > _maxProofBytes) {
         _snack('Ukuran terlalu besar', 'Maksimal $maxProofMb MB',
@@ -176,21 +170,9 @@ class CheckoutController extends GetxController {
     proofName.value = null;
   }
 
-  // 11. STEP 2 — Kirim ke kasir: commit order + clear cart + ke tab Order.
+  // 10. STEP 2 — Kirim ke kasir via API
   Future<void> finalize() async {
     if (isSubmitting.value || _draft == null) return;
-  // 10. STEP 2 — Kirim ke kasir (SINKRON).
-  //
-  // PENTING: selama LOKAL (satu instance app), bukti pembayaran dibawa sebagai
-  // BYTES di dalam order agar bisa langsung ditampilkan kasir. JANGAN
-  // mengosongkan bytes / meng-`await` upload ke storage di sini (memicu error
-  // "disposed EngineFlutterView" di web + bukti tak tampil). Upload ke Supabase
-  // Storage baru dilakukan pada tahap Supabase.
-  //
-  // CATATAN STOK: pengurangan stok TIDAK dilakukan di sini, melainkan saat
-  // KASIR memvalidasi pembayaran (OrderService.confirmPayment).
-  void finalize() {
-    if (isSubmitting.value || _draft == null) return; // guard anti double-klik
     if (requiresProof && !hasProof) {
       _snack(
           'Bukti diperlukan', 'Unggah bukti pembayaran dulu', AppColors.danger);
@@ -198,30 +180,19 @@ class CheckoutController extends GetxController {
     }
     isSubmitting.value = true;
 
-    final committed = OrderModel(
-      id: _draft!.id,
-      namaPemesan: _draft!.namaPemesan,
-      namaMeja: _draft!.namaMeja,
-      nomorHp: _draft!.nomorHp,
-      email: _draft!.email,
-      paymentMethod: _draft!.paymentMethod,
-      items: _draft!.items,
-      totalHarga: _draft!.totalHarga,
-      createdAt: _draft!.createdAt,
-      paymentProofBytes: proofBytes.value, // bytes TETAP dibawa (tampil di kasir)
-      paymentProofPath: proofName.value,
-      // paymentConfirmed default false → menunggu validasi kasir.
-    );
     try {
       await _orderApi.createOrder({
-        "customer_name": committed.namaPemesan,
-        "table_name": committed.namaMeja,
-        "phone": committed.nomorHp ?? "",
-        "email": committed.email,
-        "payment_method": committed.paymentMethod.name,
-        "total_price": committed.totalHarga,
-        "payment_proof": committed.paymentProofPath ?? "",
-        "items": committed.items.map((item) {
+        "customer_name": _draft!.namaPemesan,
+        "table_name": _draft!.namaMeja,
+        "phone": _draft!.nomorHp ?? "",
+        "email": _draft!.email,
+        "payment_method":
+            paymentMethod.value.name, // Mengambil metode terupdate
+        "total_price": _draft!.totalHarga,
+        "payment_proof_name": proofName.value ?? "",
+        "payment_proof_base64":
+            proofBytes.value != null ? base64Encode(proofBytes.value!) : "",
+        "items": _draft!.items.map((item) {
           return {
             "menu_name": item.menuItem.nama,
             "quantity": item.quantity,
@@ -237,30 +208,19 @@ class CheckoutController extends GetxController {
         Get.find<UserShellController>().goToOrder();
       }
 
+      if (Get.isRegistered<UserOrderController>()) {
+        Get.find<UserOrderController>().loadOrders();
+      }
+
       Get.back();
 
-      _snack(
-        'Pesanan dikirim',
-        'Pesanan berhasil masuk database',
-        AppColors.primary,
-      );
+      _snack('Pesanan dikirim', 'Pesanan berhasil masuk database',
+          AppColors.primary);
     } catch (e) {
-      _snack(
-        'Error',
-        e.toString(),
-        AppColors.danger,
-      );
+      _snack('Error', e.toString(), AppColors.danger);
+    } finally {
+      isSubmitting.value = false;
     }
-
-    _orderService.addOrder(committed);
-    _cart.clearCart();
-    isSubmitting.value = false;
-
-    if (Get.isRegistered<UserShellController>()) {
-      Get.find<UserShellController>().goToOrder();
-    }
-    Get.back();
-    _snack('Pesanan dikirim', 'Pesanan diteruskan ke kasir', AppColors.primary);
   }
 
   void _snack(String title, String msg, Color color) {

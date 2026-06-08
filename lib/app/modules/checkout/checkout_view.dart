@@ -18,9 +18,6 @@ class CheckoutView extends GetView<CheckoutController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      // AppBar full-bleed: Material putih mengisi SELURUH lebar layar
-      // (edge-to-edge). Isi (back + judul) diselaraskan ke kolom konten 1200px
-      // lewat Center+ConstrainedBox, jadi tidak ada lagi jarak sage di kiri/kanan.
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
@@ -93,10 +90,10 @@ class CheckoutView extends GetView<CheckoutController> {
                       ),
                     ),
                     SizedBox(height: context.r(AppSizes.xl)),
-                    Obx(() => AbsorbPointer(
-                          absorbing: controller.isConfirmed.value,
-                          child: _buildForm(context),
-                        )),
+
+                    // Hilangkan AbsorbPointer dari luar, langsung panggil _buildForm
+                    _buildForm(context),
+
                     Obx(() => AnimatedSize(
                           duration: const Duration(milliseconds: 250),
                           alignment: Alignment.topCenter,
@@ -129,25 +126,35 @@ class CheckoutView extends GetView<CheckoutController> {
           ),
         ),
         SizedBox(height: context.r(AppSizes.md)),
-        TextFormField(
-          controller: controller.namaC,
-          validator: controller.validateNama,
-          decoration: _pill(context, 'Nama'),
-        ),
-        SizedBox(height: context.r(AppSizes.md)),
-        TextFormField(
-          controller: controller.hpC,
-          validator: controller.validateHp,
-          keyboardType: TextInputType.number,
-          decoration: _pill(context, 'Phone Number (opsional)'),
-        ),
-        SizedBox(height: context.r(AppSizes.md)),
-        TextFormField(
-          controller: controller.emailC,
-          validator: controller.validateEmail,
-          keyboardType: TextInputType.emailAddress,
-          decoration: _pill(context, 'Email'),
-        ),
+
+        // Letakkan AbsorbPointer DI SINI, supaya HANYA text field yang terkunci
+        Obx(() => AbsorbPointer(
+              absorbing: controller.isConfirmed.value,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: controller.namaC,
+                    validator: controller.validateNama,
+                    decoration: _pill(context, 'Nama'),
+                  ),
+                  SizedBox(height: context.r(AppSizes.md)),
+                  TextFormField(
+                    controller: controller.hpC,
+                    validator: controller.validateHp,
+                    keyboardType: TextInputType.number,
+                    decoration: _pill(context, 'Phone Number (opsional)'),
+                  ),
+                  SizedBox(height: context.r(AppSizes.md)),
+                  TextFormField(
+                    controller: controller.emailC,
+                    validator: controller.validateEmail,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: _pill(context, 'Email'),
+                  ),
+                ],
+              ),
+            )),
+
         SizedBox(height: context.r(AppSizes.xl)),
         Text(
           'Payment Method',
@@ -191,29 +198,21 @@ class CheckoutView extends GetView<CheckoutController> {
     );
   }
 
-  /// Bottom bar pembayaran.
-  /// PENTING (akar bug "layar memutih"): `Center` di dalam bottomNavigationBar
-  /// WAJIB pakai `heightFactor: 1.0`. Tanpa itu, karena Scaffold memberi bar
-  /// batas tinggi selonggar layar, `Center` memuai setinggi layar → body
-  /// terdorong jadi tinggi 0 → halaman blank. heightFactor menyusutkan Center
-  /// ke tinggi kontennya.
   Widget _buildBottomBar(BuildContext context) {
     return SafeArea(
       top: false,
       child: Padding(
-        // Jarak latar putih: kiri & kanan saja; bawah 0 (menempel ke layar).
         padding: EdgeInsets.only(
           left: context.r(AppSizes.lg),
           right: context.r(AppSizes.lg),
           bottom: 0,
         ),
         child: Center(
-          heightFactor: 1.0, // <- mencegah bug layar memutih
+          heightFactor: 1.0,
           child: ConstrainedBox(
             constraints:
                 const BoxConstraints(maxWidth: AppSizes.maxContentDesktop),
             child: Container(
-              // Kotak putih: lengkung hanya di sudut atas (bawah menempel).
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.vertical(

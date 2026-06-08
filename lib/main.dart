@@ -15,7 +15,6 @@ import 'app/modules/cart/cart_controller.dart';
 import 'app/routes/app_pages.dart';
 import 'app/routes/app_routes.dart';
 import 'app/data/services/order_api_service.dart';
-import 'app/modules/order_user/user_order_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,11 +24,9 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // 1. SharedPreferences global
   final prefs = await SharedPreferences.getInstance();
   Get.put<SharedPreferences>(prefs, permanent: true);
 
-  // 2. Services global (permanent: true)
   Get.put<AuthService>(AuthService(), permanent: true);
   Get.put<MenuService>(MenuService(), permanent: true);
   Get.put<CartController>(CartController(), permanent: true);
@@ -38,16 +35,8 @@ void main() async {
   Get.find<PaymentSettingsService>().load();
   Get.put<MenuStockService>(MenuStockService(), permanent: true);
   Get.put<OrderApiService>(OrderApiService(), permanent: true);
-  // Get.put<UserOrderController>(UserOrderController(), permanent: true);
-  Get.find<MenuStockService>().init(Get.find<MenuService>().getAllMenu());
   Get.put<ProofStorage>(InMemoryProofStorage(), permanent: true);
 
-  // Seed pesanan contoh (lokal). Aman dihapus.
-  Get.find<OrderService>().seedDemo(Get.find<MenuService>().getAllMenu());
-
-  // 3. Keputusan halaman awal DIPINDAH ke SplashController.
-  //    App selalu masuk lewat /splash dulu (native splash → splash Flutter
-  //    beranimasi → login/shell). Splash yang menentukan tujuan & menavigasi.
   runApp(const CafeAmbaApp());
 }
 

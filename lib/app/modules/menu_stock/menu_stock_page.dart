@@ -8,7 +8,6 @@ import '../../core/widgets/responsive_wrapper.dart';
 import 'menu_stock_controller.dart';
 import 'widgets/menu_stock_card.dart';
 
-/// Tab Menu Stock (kitchen): daftar menu + tombol Add (+100) / Empty (→0).
 class MenuStockPage extends GetView<MenuStockController> {
   const MenuStockPage({super.key});
 
@@ -32,7 +31,7 @@ class MenuStockPage extends GetView<MenuStockController> {
             ),
             Expanded(
               child: Obx(() {
-                final menu = controller.menu; // dependency reaktif
+                final menu = controller.menu;
                 return ListView.builder(
                   padding: EdgeInsets.fromLTRB(context.r(AppSizes.lg), 0,
                       context.r(AppSizes.lg), context.r(AppSizes.lg)),
@@ -65,11 +64,9 @@ class MenuStockPage extends GetView<MenuStockController> {
                                 onPressed: () {
                                   final qty =
                                       int.tryParse(qtyController.text) ?? 0;
-
                                   if (qty > 0) {
                                     controller.add(item.id, qty);
                                   }
-
                                   Navigator.pop(context);
                                 },
                                 child: const Text('Tambah'),
@@ -81,23 +78,6 @@ class MenuStockPage extends GetView<MenuStockController> {
                       onEmpty: () => controller.empty(item.id),
                     );
                   },
-                final stockMap = controller.stockMap;
-                final menu = controller.menu;
-                // Bangun children secara eager (bukan ListView.builder lazy)
-                // supaya pembacaan stockMap[id] terjadi di dalam scope Obx →
-                // dependency reaktif terdaftar (hindari error "improper GetX").
-                return ListView(
-                  padding: EdgeInsets.fromLTRB(context.r(AppSizes.lg), 0,
-                      context.r(AppSizes.lg), context.r(AppSizes.lg)),
-                  children: [
-                    for (final item in menu)
-                      MenuStockCard(
-                        item: item,
-                        stock: stockMap[item.id] ?? 0,
-                        onAdd: () => controller.add(item.id),
-                        onEmpty: () => controller.empty(item.id),
-                      ),
-                  ],
                 );
               }),
             ),

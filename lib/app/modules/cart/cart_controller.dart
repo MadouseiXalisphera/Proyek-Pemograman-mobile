@@ -6,14 +6,6 @@ import '../../core/utils/format.dart';
 import '../../data/models/cart_item_model.dart';
 import '../../data/models/menu_item_model.dart';
 
-/// Keranjang dengan model PER-BARIS.
-///
-/// Satu baris = (menu + catatan). Dua porsi menu sama dengan catatan berbeda =
-/// dua baris terpisah, jadi catatan bisa beda untuk porsi item yang sama (#2).
-/// Penambahan dari detail memakai [addItem] sekali jalan (tanpa loop, #3).
-///
-/// Quick add/kurang dari kartu Home (`increment`/`decrement`/`getQuantity`)
-/// beroperasi pada baris TANPA catatan (catatan == '').
 class CartController extends GetxController {
   final RxList<CartItem> items = <CartItem>[].obs;
 
@@ -27,44 +19,8 @@ class CartController extends GetxController {
     return -1;
   }
 
-  void increment(String menuId, MenuItem item) {
-    if (item.stock <= 0) {
   bool _available(String menuId, String nama) {
-    if (Get.isRegistered<MenuStockService>() &&
-        !Get.find<MenuStockService>().isAvailable(menuId)) {
-      Get.snackbar(
-        'Stok habis',
-        '$nama sedang tidak tersedia',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.danger.withValues(alpha: 0.12),
-        colorText: AppColors.danger,
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(milliseconds: 1600),
-      );
-
-      return;
-    }
-
-    for (int i = 0; i < items.length; i++) {
-      if (items[i].menuItem.id == menuId) {
-        items[i].quantity++;
-
-        items.refresh();
-
-        return;
-      }
-    }
-
-    items.add(
-      CartItem(
-        menuItem: item,
-        quantity: 1,
-        catatan: '',
-      ),
-    );
-
-      return false;
-    }
+    // Validasi stok bisa diatur di sini (sekarang selalu true untuk transisi API)
     return true;
   }
 
@@ -113,9 +69,6 @@ class CartController extends GetxController {
   // ── Operasi per-baris (dipakai di tab Cart) ──────────────────────────────
   void incrementAt(int index) {
     if (index < 0 || index >= items.length) return;
-    if (!_available(items[index].menuItem.id, items[index].menuItem.nama)) {
-      return;
-    }
     items[index].quantity++;
     items.refresh();
   }

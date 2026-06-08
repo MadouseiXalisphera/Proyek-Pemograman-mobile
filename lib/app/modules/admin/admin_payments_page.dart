@@ -91,12 +91,12 @@ class AdminPaymentsPage extends GetView<AdminController> {
 class _PaymentCardAPI extends StatelessWidget {
   final dynamic orderData;
   final VoidCallback onConfirm;
-  final VoidCallback onReject; // <--- Tambahkan ini
+  final VoidCallback onReject;
 
   const _PaymentCardAPI({
     required this.orderData,
     required this.onConfirm,
-    required this.onReject, // <--- Tambahkan ini
+    required this.onReject,
   });
 
   @override
@@ -111,9 +111,9 @@ class _PaymentCardAPI extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Nomor pesanan (pelacakan lintas peran)
+          // 1. Perbaikan Nomor Pesanan (Mengambil 'id' dari API MySQL)
           Text(
-            'Pesanan ${order.displayNo}',
+            'Pesanan #${orderData['id']}',
             style: TextStyle(
               fontSize: context.rf(AppSizes.fontMd),
               fontWeight: FontWeight.w700,
@@ -143,42 +143,25 @@ class _PaymentCardAPI extends StatelessWidget {
             'Total: Rp ${orderData['total_price']}',
             style: TextStyle(fontSize: context.rf(AppSizes.fontMd)),
           ),
-          if (order.paymentProofBytes != null) ...[
-            SizedBox(height: context.r(AppSizes.md)),
-            Text(
-              'Bukti pembayaran:',
-              style: TextStyle(
-                fontSize: context.rf(AppSizes.fontSm),
-                color: AppColors.textSecondary,
-              ),
+
+          // 2. Perbaikan Bukti Pembayaran disesuaikan dengan response JSON API MySQL
+          SizedBox(height: context.r(AppSizes.sm)),
+          Text(
+            orderData['payment_method'] == 'cash'
+                ? 'Bayar tunai di kasir.'
+                : (orderData['payment_proof'] != null &&
+                        orderData['payment_proof'].toString().isNotEmpty
+                    ? 'Bukti dilampirkan: ${orderData['payment_proof']}'
+                    : 'Belum ada bukti.'),
+            style: TextStyle(
+              fontSize: context.rf(AppSizes.fontSm),
+              fontStyle: FontStyle.italic,
+              color: AppColors.textSecondary,
             ),
-            SizedBox(height: context.r(AppSizes.xs)),
-            GestureDetector(
-              onTap: () => _viewProof(context, order.paymentProofBytes!),
-              child: AppMenuImage(
-                bytes: order.paymentProofBytes,
-                width: double.infinity,
-                height: context.r(160),
-                fit: BoxFit.cover,
-                borderRadius: BorderRadius.circular(context.r(AppSizes.md)),
-              ),
-            ),
-          ] else ...[
-            SizedBox(height: context.r(AppSizes.sm)),
-            Text(
-              order.paymentMethod == PaymentMethod.cash
-                  ? 'Bayar tunai di kasir.'
-                  : 'Belum ada bukti.',
-              style: TextStyle(
-                fontSize: context.rf(AppSizes.fontSm),
-                fontStyle: FontStyle.italic,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
+          ),
           SizedBox(height: context.r(AppSizes.lg)),
 
-          // 2. Ubah bagian tombol menjadi Row berisi 2 tombol (Tolak & Konfirmasi)
+          // Tombol Konfirmasi & Tolak
           Row(
             children: [
               Expanded(
@@ -220,23 +203,6 @@ class _PaymentCardAPI extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  void _viewProof(BuildContext context, Uint8List bytes) {
-    Get.dialog(
-      Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.all(context.r(AppSizes.lg)),
-        child: GestureDetector(
-          onTap: () => Get.back(),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(context.r(AppSizes.md)),
-            child: AppMenuImage(bytes: bytes, fit: BoxFit.contain),
-          ),
-        ),
-      ),
-      barrierColor: Colors.black.withValues(alpha: 0.8),
     );
   }
 }

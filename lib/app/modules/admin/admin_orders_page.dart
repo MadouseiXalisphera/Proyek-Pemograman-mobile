@@ -7,8 +7,6 @@ import '../../core/utils/responsive.dart';
 import '../../core/widgets/responsive_wrapper.dart';
 import 'admin_controller.dart';
 
-/// Tab Orders ADMIN: rekap seluruh pesanan (read-only) dengan status terkini.
-/// Tiap baris menampilkan NOMOR PESANAN agar mudah dicocokkan lintas peran.
 class AdminOrdersPage extends GetView<AdminController> {
   const AdminOrdersPage({super.key});
 
@@ -95,52 +93,6 @@ class AdminOrdersPage extends GetView<AdminController> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _Row extends StatelessWidget {
-  final OrderModel order;
-  const _Row({required this.order});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(bottom: context.r(AppSizes.md)),
-      padding: EdgeInsets.all(context.r(AppSizes.lg)),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(context.r(AppSizes.radiusLg)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  'Pesanan ${order.displayNo} · ${order.namaMeja}',
-                  style: TextStyle(
-                    fontSize: context.rf(AppSizes.fontMd),
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              StatusBadge(statusKey: order.statusKey),
-            ],
-          ),
-          SizedBox(height: context.r(AppSizes.xs)),
-          Text(
-            '${paymentMethodLabel(order.paymentMethod)} · ${order.items.length} item · ${formatRupiah(order.totalHarga)}',
-            style: TextStyle(
-              fontSize: context.rf(AppSizes.fontSm),
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
       ),
     );
   }

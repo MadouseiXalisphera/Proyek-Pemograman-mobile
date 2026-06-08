@@ -118,4 +118,12 @@ class OrderApiService {
       'max_sales': (data['max_sales'] as num).toDouble(),
     };
   }
+
+  Future<List<dynamic>> getKitchenHistory() async {
+    final response = await http
+        .get(Uri.parse('${ApiConfig.baseUrl}/orders/get_kitchen_history.php'));
+    final data = jsonDecode(response.body);
+    if (data['success'] != true) return [];
+    return data['data'];
+  }
 }
