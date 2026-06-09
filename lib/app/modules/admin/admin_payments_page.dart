@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -12,6 +14,7 @@ import 'admin_controller.dart';
 
 /// Tab Payments ADMIN/KASIR: validasi pembayaran manual.
 /// Konfirmasi → pesanan masuk antrian kitchen. Tolak → dibatalkan.
+/// Tiap kartu menampilkan NOMOR PESANAN agar mudah dicocokkan dgn user/kitchen.
 class AdminPaymentsPage extends GetView<AdminController> {
   const AdminPaymentsPage({super.key});
 
@@ -99,6 +102,16 @@ class _PaymentCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Nomor pesanan (pelacakan lintas peran)
+          Text(
+            'Pesanan ${order.displayNo}',
+            style: TextStyle(
+              fontSize: context.rf(AppSizes.fontMd),
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+            ),
+          ),
+          SizedBox(height: context.r(AppSizes.xs)),
           Row(
             children: [
               Expanded(
@@ -139,9 +152,7 @@ class _PaymentCard extends StatelessWidget {
               color: AppColors.textPrimary,
             ),
           ),
-
-          // Bukti pembayaran (jika ada) — tap untuk perbesar.
-          if (order.paymentProofPath != null) ...[
+          if (order.paymentProofBytes != null) ...[
             SizedBox(height: context.r(AppSizes.md)),
             Text(
               'Bukti pembayaran:',
@@ -152,9 +163,9 @@ class _PaymentCard extends StatelessWidget {
             ),
             SizedBox(height: context.r(AppSizes.xs)),
             GestureDetector(
-              onTap: () => _viewProof(context, order.paymentProofPath!),
+              onTap: () => _viewProof(context, order.paymentProofBytes!),
               child: AppMenuImage(
-                path: order.paymentProofPath,
+                bytes: order.paymentProofBytes,
                 width: double.infinity,
                 height: context.r(160),
                 fit: BoxFit.cover,
@@ -174,7 +185,6 @@ class _PaymentCard extends StatelessWidget {
               ),
             ),
           ],
-
           SizedBox(height: context.r(AppSizes.lg)),
           Row(
             children: [
@@ -187,8 +197,8 @@ class _PaymentCard extends StatelessWidget {
                     padding:
                         EdgeInsets.symmetric(vertical: context.r(AppSizes.md)),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                          context.r(AppSizes.radiusFull)),
+                      borderRadius:
+                          BorderRadius.circular(context.r(AppSizes.radiusFull)),
                     ),
                   ),
                   child: const Text('Tolak'),
@@ -206,8 +216,8 @@ class _PaymentCard extends StatelessWidget {
                     padding:
                         EdgeInsets.symmetric(vertical: context.r(AppSizes.md)),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                          context.r(AppSizes.radiusFull)),
+                      borderRadius:
+                          BorderRadius.circular(context.r(AppSizes.radiusFull)),
                     ),
                   ),
                   child: const Text('Konfirmasi Pembayaran',
@@ -221,7 +231,7 @@ class _PaymentCard extends StatelessWidget {
     );
   }
 
-  void _viewProof(BuildContext context, String path) {
+  void _viewProof(BuildContext context, Uint8List bytes) {
     Get.dialog(
       Dialog(
         backgroundColor: Colors.transparent,
@@ -230,7 +240,7 @@ class _PaymentCard extends StatelessWidget {
           onTap: () => Get.back(),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(context.r(AppSizes.md)),
-            child: AppMenuImage(path: path, fit: BoxFit.contain),
+            child: AppMenuImage(bytes: bytes, fit: BoxFit.contain),
           ),
         ),
       ),

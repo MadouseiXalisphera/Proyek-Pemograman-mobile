@@ -32,21 +32,23 @@ class MenuStockPage extends GetView<MenuStockController> {
             ),
             Expanded(
               child: Obx(() {
-                final stockMap = controller.stockMap; // dependency reaktif
+                final stockMap = controller.stockMap;
                 final menu = controller.menu;
-                return ListView.builder(
+                // Bangun children secara eager (bukan ListView.builder lazy)
+                // supaya pembacaan stockMap[id] terjadi di dalam scope Obx →
+                // dependency reaktif terdaftar (hindari error "improper GetX").
+                return ListView(
                   padding: EdgeInsets.fromLTRB(context.r(AppSizes.lg), 0,
                       context.r(AppSizes.lg), context.r(AppSizes.lg)),
-                  itemCount: menu.length,
-                  itemBuilder: (_, i) {
-                    final item = menu[i];
-                    return MenuStockCard(
-                      item: item,
-                      stock: stockMap[item.id] ?? 0,
-                      onAdd: () => controller.add(item.id),
-                      onEmpty: () => controller.empty(item.id),
-                    );
-                  },
+                  children: [
+                    for (final item in menu)
+                      MenuStockCard(
+                        item: item,
+                        stock: stockMap[item.id] ?? 0,
+                        onAdd: () => controller.add(item.id),
+                        onEmpty: () => controller.empty(item.id),
+                      ),
+                  ],
                 );
               }),
             ),

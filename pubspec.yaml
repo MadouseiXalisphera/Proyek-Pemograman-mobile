@@ -21,9 +21,28 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0 # naikkan dari ^3.0.0
+  flutter_native_splash: ^2.4.1
+
+flutter_native_splash:
+  color: "#E4ECE7" # = AppColors.background
+  image: assets/branding/splash_logo.png # logo PNG (lingkaran forest + cup), transparan
+  android_gravity: center
+  ios_content_mode: center
+  android: true
+  ios: true
+  web: false # web ditangani index.html
+  android_12: # Android 12+ pakai API splash terpisah
+    color: "#E4ECE7"
+    image: assets/branding/splash_logo_android12.png # logo PNG dengan padding besar agar tidak terpotong mask lingkaran Android 12
+    # darkmode (opsional)
+    # darkColor: "#1F2A22"
+    # darkImage: assets/branding/splash_logo.png
+    # android_12:
+    #   icon_background_color_dark: "#1F2A22"
 
 flutter:
   uses-material-design: true
   assets:
     - assets/menu/
     - assets/payment/
+    - assets/branding/ # logo splash

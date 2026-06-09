@@ -4,13 +4,18 @@ import 'package:get/get.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_sizes.dart';
 import '../../core/utils/responsive.dart';
-import '../../core/widgets/confirm_clear_dialog.dart';
+import '../../core/widgets/order_status_badge.dart';
 import '../../core/widgets/responsive_wrapper.dart';
 import 'kitchen_order_controller.dart';
 import 'widgets/kitchen_order_card.dart';
 
-/// Tab Order KITCHEN (Image 3 & 4): pesanan dikelompokkan per meja, tiap item
-/// punya tombol 3-kondisi (Confirm Order → ✓ → Selesai).
+/// Tab Order KITCHEN: pesanan dikelompokkan per meja, lalu per nomor pesanan,
+/// tiap item punya tombol 3-kondisi (Confirm Order → Done → Selesai).
+///
+/// Catatan: tombol "Hapus semua" DIHILANGKAN dari UI agar tidak salah tekan.
+/// Pesanan yang seluruh itemnya selesai otomatis lenyap dari daftar aktif
+/// (isVisibleToKitchen=false) tetapi tetap tersimpan untuk Riwayat & riwayat
+/// user (tidak dihapus dari store bersama).
 class KitchenOrderPage extends GetView<KitchenOrderController> {
   const KitchenOrderPage({super.key});
 
@@ -28,40 +33,13 @@ class KitchenOrderPage extends GetView<KitchenOrderController> {
                 context.r(AppSizes.lg),
                 context.r(AppSizes.sm),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Orders',
-                      style: TextStyle(
-                        fontSize: context.rf(AppSizes.fontDisplay),
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  Obx(() {
-                    if (!controller.hasDoneOrders) {
-                      return const SizedBox.shrink();
-                    }
-                    return TextButton.icon(
-                      onPressed: () => showClearAllDialog(
-                        confirmLabel: 'Clear all',
-                        onConfirm: controller.clearDone,
-                      ),
-                      icon: Icon(Icons.delete_sweep_outlined,
-                          size: context.r(20), color: AppColors.danger),
-                      label: Text(
-                        'Hapus semua',
-                        style: TextStyle(
-                          fontSize: context.rf(AppSizes.fontSm),
-                          color: AppColors.danger,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    );
-                  }),
-                ],
+              child: Text(
+                'Orders',
+                style: TextStyle(
+                  fontSize: context.rf(AppSizes.fontDisplay),
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ),
             Expanded(
@@ -91,12 +69,35 @@ class KitchenOrderPage extends GetView<KitchenOrderController> {
                           ),
                         ),
                       ),
-                      for (final order in grouped[table]!)
+                      for (final order in grouped[table]!) ...[
+                        // Sub-judul: NOMOR PESANAN + status, agar tiap pesanan
+                        // bisa dilacak & tidak tertukar dalam satu meja.
+                        Padding(
+                          padding: EdgeInsets.only(
+                            bottom: context.r(AppSizes.sm),
+                            top: context.r(AppSizes.xs),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Pesanan ${order.displayNo}',
+                                style: TextStyle(
+                                  fontSize: context.rf(AppSizes.fontMd),
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              SizedBox(width: context.r(AppSizes.sm)),
+                              StatusBadge(statusKey: order.statusKey),
+                            ],
+                          ),
+                        ),
                         for (final item in order.items)
                           KitchenOrderCard(
                             item: item,
                             onAdvance: () => controller.advance(order, item),
                           ),
+                      ],
                     ],
                   ],
                 );

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'cart_item_model.dart';
 
 enum PaymentMethod { cash, transfer, qris }
@@ -28,11 +30,18 @@ class OrderModel {
   /// Path bukti pembayaran (lokal sekarang; URL Supabase Storage nanti).
   final String? paymentProofPath;
 
+  /// Byte gambar bukti (preview lintas platform, termasuk web).
+  final Uint8List? paymentProofBytes;
+
   /// Divalidasi kasir/admin. Pesanan baru tampil di kitchen bila true.
   bool paymentConfirmed;
 
   /// Dibatalkan kasir/admin.
   bool cancelled;
+
+  /// Nomor urut pesanan PER MEJA (di-set OrderService saat addOrder/seed).
+  /// 0 = belum ditetapkan. Lihat [displayNo] untuk format tampilan.
+  int orderNo;
 
   OrderModel({
     required this.id,
@@ -45,9 +54,24 @@ class OrderModel {
     required this.totalHarga,
     required this.createdAt,
     this.paymentProofPath,
+    this.paymentProofBytes,
     this.paymentConfirmed = false,
     this.cancelled = false,
+    this.orderNo = 0,
   });
+
+  /// Kode meja ringkas untuk nomor pesanan: "Meja A1" → "A1", "VIP Room" → "VIP".
+  String get _mejaCode {
+    var m = namaMeja.trim();
+    if (m.toLowerCase().startsWith('meja ')) m = m.substring(5).trim();
+    final sp = m.indexOf(' ');
+    if (sp > 0) m = m.substring(0, sp);
+    return m.toUpperCase();
+  }
+
+  /// Nomor pesanan yang ditampilkan (PER MEJA), mis. "A1-3".
+  /// Dipakai seragam di user, kitchen, dan kasir agar tidak tumpang tindih.
+  String get displayNo => orderNo > 0 ? '$_mejaCode-$orderNo' : _mejaCode;
 
   /// Kunci status lifecycle untuk ditampilkan (lihat OrderStatusView).
   String get statusKey {

@@ -11,6 +11,7 @@ import '../../data/models/order_model.dart';
 import 'admin_controller.dart';
 
 /// Tab Orders ADMIN: rekap seluruh pesanan (read-only) dengan status terkini.
+/// Tiap baris menampilkan NOMOR PESANAN agar mudah dicocokkan lintas peran.
 class AdminOrdersPage extends GetView<AdminController> {
   const AdminOrdersPage({super.key});
 
@@ -83,7 +84,7 @@ class _Row extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '${order.namaMeja} · ${paymentMethodLabel(order.paymentMethod)}',
+                  'Pesanan ${order.displayNo} · ${order.namaMeja}',
                   style: TextStyle(
                     fontSize: context.rf(AppSizes.fontMd),
                     fontWeight: FontWeight.w700,
@@ -96,7 +97,7 @@ class _Row extends StatelessWidget {
           ),
           SizedBox(height: context.r(AppSizes.xs)),
           Text(
-            '${order.items.length} item · ${formatRupiah(order.totalHarga)}',
+            '${paymentMethodLabel(order.paymentMethod)} · ${order.items.length} item · ${formatRupiah(order.totalHarga)}',
             style: TextStyle(
               fontSize: context.rf(AppSizes.fontSm),
               color: AppColors.textSecondary,

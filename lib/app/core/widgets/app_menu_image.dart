@@ -1,11 +1,12 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
 /// Sumber gambar yang dikenali [AppMenuImage].
-enum _ImageSourceKind { none, network, file, asset }
+enum _ImageSourceKind { none, bytes, network, file, asset }
 
 /// Widget gambar terpadu untuk seluruh app (kartu menu, detail, keranjang,
 /// order kitchen, bukti bayar).
@@ -23,6 +24,12 @@ enum _ImageSourceKind { none, network, file, asset }
 /// jadi UI tidak pernah menampilkan error merah Flutter.
 class AppMenuImage extends StatelessWidget {
   final String? path;
+
+  /// Byte gambar (mis. hasil image_picker di web). Bila diisi, diutamakan
+  /// daripada [path] dan dirender via [Image.memory] — bekerja lintas platform
+  /// (web/desktop/mobile) tanpa perlu file path nyata.
+  final Uint8List? bytes;
+
   final double? width;
   final double? height;
   final BoxFit fit;
@@ -30,7 +37,8 @@ class AppMenuImage extends StatelessWidget {
 
   const AppMenuImage({
     super.key,
-    required this.path,
+    this.path,
+    this.bytes,
     this.width,
     this.height,
     this.fit = BoxFit.cover,
@@ -38,6 +46,7 @@ class AppMenuImage extends StatelessWidget {
   });
 
   _ImageSourceKind get _kind {
+    if (bytes != null && bytes!.isNotEmpty) return _ImageSourceKind.bytes;
     final p = path;
     if (p == null || p.trim().isEmpty) return _ImageSourceKind.none;
     if (p.startsWith('http://') || p.startsWith('https://')) {
@@ -71,6 +80,15 @@ class AppMenuImage extends StatelessWidget {
     switch (_kind) {
       case _ImageSourceKind.none:
         image = _placeholder();
+        break;
+      case _ImageSourceKind.bytes:
+        image = Image.memory(
+          bytes!,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: _onError,
+        );
         break;
       case _ImageSourceKind.network:
         image = Image.network(
